@@ -1,0 +1,41 @@
+%include{
+#include "friends_defs.h"
+#include "friends_struct_data.h"
+#include "friends_error.h"
+
+#ifdef assert
+#undef assert
+#endif
+
+#define assert friendsAssert
+}
+
+%extra_argument { friendsParser *p }
+%name friendsParserCore
+%token_prefix friends
+
+friends_world ::= statements.
+statements ::= statements statement.
+
+statement ::= friend_define.
+statement ::= friend_ask.
+
+friend_define ::= WAAI friend_part NANDANE.
+friend_define ::= WAAI friend_part NANDANE TANOSHI.
+friend_define ::= WAAI conditionals friend_part NANDANE.
+friend_define ::= WAAI conditionals friend_part NANDANE TANOSHI.
+
+friend_ask ::= friend_part NANDAKKE.
+friend_ask ::= conditionals friend_part NANDAKKE.
+
+friend_part ::= list FRIEND_NAME FRIEND.
+
+conditionals ::= conditionals friend_part THEN.
+conditionals ::= friend_part THEN.
+
+list ::= list atom_or_variable POSP.
+list ::= atom_or_variable POSP.
+
+atom_or_variable ::= ATOM.
+atom_or_variable ::= VARIABLE.
+atom_or_variable ::= atom_or_variable NO TSUGI.

@@ -1,0 +1,9 @@
+#!ruby
+
+while l = $stdin.gets
+  d = l.chomp.encode("UTF-16LE")
+  while !(piece = d.slice!(0...5)).empty?
+    x = piece.inspect.gsub("\\", "\\\\\\\\").downcase
+    puts "#{x}  /* #{piece.encode("UTF-8")} */"
+  end
+end
