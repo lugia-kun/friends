@@ -343,7 +343,7 @@ void friendsSetErrorImplement(friendsError *errpvar, friendsError ev)
   }
 }
 
-void friendsSetErrorFromErrno(friendsError *errpvar, errno_t errn)
+void friendsSetErrorFromErrno(friendsError *errpvar, int errn)
 {
   friendsAssert(errpvar);
 
@@ -420,7 +420,9 @@ void friendsSetErrorFromErrno(friendsError *errpvar, errno_t errn)
   case SET_FROM_ERRNO(CONNRESET); break;
 #endif
 #ifdef EDEADLK
+#if defined(EDEADLOCK) && EDEADLK != EDEADLOCK
   case SET_FROM_ERRNO(DEADLK); break;
+#endif
 #endif
 #ifdef EDEADLOCK
   case SET_FROM_ERRNO(DEADLOCK); break;

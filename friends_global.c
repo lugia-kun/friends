@@ -1,4 +1,5 @@
 
+#include "friends_defs.h"
 #include "friends_global.h"
 #include "friends_error.h"
 #include "enc/utf8.h"

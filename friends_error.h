@@ -132,7 +132,7 @@ void friendsSetErrorImplement(friendsError *errpvar, friendsError ev);
   friendsSetErrorImplement(&errvar, friendsError##esym)
 
 
-void friendsSetErrorFromErrno(friendsError *errpvar, errno_t errn);
+void friendsSetErrorFromErrno(friendsError *errpvar, int errn);
 
 #define friendsAnyError(errvar)                 \
   ((errvar) != friendsNoError)

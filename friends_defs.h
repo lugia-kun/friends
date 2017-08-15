@@ -327,9 +327,9 @@ typedef int friendsCharDecoder(char **, const friendsChar *, friendsError *);
  * @brief Friends 内で使う文字コードの変換関数を定義するための型なのです。
  */
 struct friendsCodeSetT {
-  friendsCharEncoder *const enc; /*!< エンコーダなのです。 */
-  friendsCharDecoder *const dec; /*!< デコーダなのです。 */
-  const char *const name;        /*!< 文字コードの名前なのです。 */
+  friendsCharEncoder *enc; /*!< エンコーダなのです。 */
+  friendsCharDecoder *dec; /*!< デコーダなのです。 */
+  const char *name;        /*!< 文字コードの名前なのです。 */
 };
 typedef struct friendsCodeSetT friendsCodeSet;
 

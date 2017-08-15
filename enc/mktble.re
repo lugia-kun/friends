@@ -258,7 +258,11 @@ int parse_ucm(tblset *tset, FILE *fp)
       *      { goto code_set_name; }
       "\x00" { goto error; }
       "\n"   { continue; }
-      "\"".*"\"" { parser_copyToken(&tset->code_set_name, p, 1); continue; }
+      "\"".*"\"" {
+          if (tset->code_set_name) { free(tset->code_set_name); }
+          parser_copyToken(&tset->code_set_name, p, 1);
+          continue;
+      }
      */
 
   uconv_class:
@@ -267,7 +271,11 @@ int parse_ucm(tblset *tset, FILE *fp)
      *      { goto uconv_class; }
      "\x00" { goto error; }
      "\n"   { continue; }
-     "\"".*"\"" { parser_copyToken(&tset->uconv_class, p, 1); continue; }
+     "\"".*"\"" {
+         if (tset->uconv_class) { free(tset->uconv_class); }
+         parser_copyToken(&tset->uconv_class, p, 1);
+         continue;
+     }
     */
 
   mb_cur_max:
@@ -765,6 +773,8 @@ int main(int argc, char **argv)
   tblset tset;
   charInfo *cip;
   int ret;
+
+  memset(&tset, 0, sizeof(tblset));
 
   if (argc <= 6) {
     fprintf(stderr, "Usage: %s UCM_DATA TEMPLATE OUTPUT CNAME HNAME IANA_NAME\n",
