@@ -27,6 +27,15 @@ struct charInfoT
   charInfo *prev;
 };
 
+struct allocDataT;
+typedef struct allocDataT allocData;
+
+struct allocDataT
+{
+  void *p;
+  allocData *next;
+};
+
 typedef struct
 {
   const char *funcname;
@@ -39,6 +48,7 @@ typedef struct
   mbcsChar *subchar;
   mbcsChar *charsetFamily;
   charInfo *charmaps;
+  allocData *allocs;
 } tblset;
 
 struct parserT
@@ -53,6 +63,22 @@ struct parserT
   size_t bufsize;
 };
 typedef struct parserT parser;
+
+void *add_alloc(tblset *set, void *p)
+{
+  allocData *a;
+
+  if (!set) return NULL;
+  if (!p) return NULL;
+
+  a = (allocData *)calloc(sizeof(allocData), 1);
+  if (!a) return NULL;
+
+  a->p = p;
+  a->next = set->allocs;
+  set->allocs = a;
+  return p;
+}
 
 void *parser_init(parser **p)
 {
@@ -202,6 +228,7 @@ int parse_ucm(tblset *tset, FILE *fp)
       tset->charmaps = ci;
       ci->prev = ci;
     }
+    if (!add_alloc(tset, ci)) goto error;
     for (;;) {
       p->t = p->p;
       /*!re2c
@@ -226,7 +253,8 @@ int parse_ucm(tblset *tset, FILE *fp)
        */
     }
     p->p--;
-    parser_copyToken(&ci->mbcs, p, 0);
+    if (parser_copyToken(&ci->mbcs, p, 0) != 0) goto error;
+    if (!add_alloc(tset, ci->mbcs)) goto error;
     continue;
 
   mode_parse:
@@ -259,8 +287,8 @@ int parse_ucm(tblset *tset, FILE *fp)
       "\x00" { goto error; }
       "\n"   { continue; }
       "\"".*"\"" {
-          if (tset->code_set_name) { free(tset->code_set_name); }
-          parser_copyToken(&tset->code_set_name, p, 1);
+          if (parser_copyToken(&tset->code_set_name, p, 1) != 0) goto error;
+          if (!add_alloc(tset, tset->code_set_name)) goto error;
           continue;
       }
      */
@@ -272,8 +300,8 @@ int parse_ucm(tblset *tset, FILE *fp)
      "\x00" { goto error; }
      "\n"   { continue; }
      "\"".*"\"" {
-         if (tset->uconv_class) { free(tset->uconv_class); }
-         parser_copyToken(&tset->uconv_class, p, 1);
+         if (parser_copyToken(&tset->uconv_class, p, 1) != 0) goto error;
+         if (!add_alloc(tset, tset->uconv_class)) goto error;
          continue;
      }
     */
@@ -415,9 +443,10 @@ int embed_code(tblset *set, FILE *input, FILE *output)
 
   mktble_start:
     state = MktbleComment;
-    if (data.oks)  { free(data.oks); data.oks = NULL; }
-    if (data.ngs)  { free(data.ngs); data.ngs = NULL; }
-    if (data.ends) { free(data.ends); data.ends = NULL; }
+    /* Allocated data will be freed very later. */
+    data.oks = NULL;
+    data.ngs = NULL;
+    data.ends = NULL;
 
   mktble:
     for(;;) {
@@ -479,7 +508,8 @@ int embed_code(tblset *set, FILE *input, FILE *output)
           "\""   { break; }
         */
       }
-      parser_copyToken(dest, p, 1);
+      if (parser_copyToken(dest, p, 1) != 0) goto error;
+      if (!add_alloc(set, *dest)) goto error;
       for (;;) {
         /*!re2c
           * { goto error; }
@@ -550,7 +580,8 @@ int embed_code(tblset *set, FILE *input, FILE *output)
           */
         }
       }
-      parser_copyToken(dest, p, 1);
+      if (parser_copyToken(dest, p, 1) != 0) goto error;
+      if (!add_alloc(set, *dest)) goto error;
       continue;
     }
     if (data.dir != 0) {
@@ -742,28 +773,21 @@ int embed_code(tblset *set, FILE *input, FILE *output)
 }
 
 void free_charinfo(charInfo *cip) {
-  if (cip) {
-    free(cip->mbcs);
-  }
   free(cip);
 }
 
 void free_tblset(tblset *set)
 {
-  charInfo *cip;
+  allocData *a, *q;
 
   if (!set) return;
 
-  cip = set->charmaps;
-  if (cip) {
-    cip = cip->prev;
-    set->charmaps->prev = NULL;
-    while (cip) {
-      charInfo *t;
-      t = cip->prev;
-      free_charinfo(cip);
-      cip = t;
-    }
+  a = set->allocs;
+  while (a) {
+    q = a->next;
+    free(a->p);
+    free(a);
+    a = q;
   }
 }
 
