@@ -202,6 +202,9 @@ int main(int argc, char **argv)
   friendsSetInsert(s, d, &e);
   eerror("friendsSetInsert");
 
+  friendsSetInsert(s, d, &e);
+  eerror("friendsSetInsert");
+
   d = newData(park, friendsTextAtom, 0,
               "\\u304b\\u3070\\u3093"  /* かばん */,
               &e);
