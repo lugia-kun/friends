@@ -14,14 +14,12 @@
 #include "friends_string.h"
 #include "friends_atom.h"
 
-typedef unsigned char friendsDataSetHash;
-
 enum {
   friendsCharMax     = UCHAR_MAX,
   friendsDataSetSize = friendsCharMax + 1,
 };
 
-static friendsDataSetHash friendsSmallHash(friendsHash h)
+friendsDataSetHash friendsSmallHash(friendsHash h)
 {
   friendsDataSetHash o = 0xc6;
   int i;
@@ -36,7 +34,7 @@ static friendsDataSetHash friendsSmallHash(friendsHash h)
   memset(t.d, 0, sizeof(friendsDataSetHash) * ASIZE);
   t.h = h;
   for (i = 0; i < ASIZE; ++i) {
-    o |= o ^ (t.d[i] << i);
+    o = o ^ (t.d[i] * 11 * (i + 1) + 6);
   }
   return o;
 }
@@ -75,6 +73,7 @@ void friendsDeleteSet(friendsDataSet *set)
     for (i = 0; i < friendsDataSetSize; ++i) {
       n = set->table[i];
       while (n) {
+        if (n->list) friendsDeleteList(n->list);
         p = n->next;
         free(n);
         n = p;
@@ -95,6 +94,7 @@ static friendsData *friendsSetGetData(friendsDataSetNode *n,
   ll = n->list;
   if (!ll) return NULL;
   if (l) *l = ll;
+  if (friendsListIsParent(ll)) ll = friendsListNext(ll);
   return friendsListData(ll);
 }
 
@@ -211,17 +211,17 @@ void friendsSetInsert(friendsDataSet *set, friendsData *d, friendsError *e)
   friendsAssert(set);
   friendsAssert(set->table);
 
-  hsh = d->hash;
+  hsh = friendsGetHash(d);
   h = friendsSmallHash(hsh);
   n = set->table[h];
   for (; n; n = n->next) {
     c = friendsSetGetData(n, &l);
     if (!c) continue;
-    if (c->hash != hsh) continue;
-    if (d->type != c->type) continue;
+    if (friendsGetHash(c) != hsh) continue;
+    if (friendsGetType(c) != friendsGetType(d)) continue;
     ct = friendsDataToText(c);
     dt = friendsDataToText(d);
-    if (ct) {
+    if (ct && dt) {
       if (ct == dt) break;
       if (friendsStringCompare(ct, dt) == 0) break;
     } else {
@@ -259,4 +259,75 @@ void friendsSetInsert(friendsDataSet *set, friendsData *d, friendsError *e)
   friendsListAppend(l, d, e);
 }
 
-void friendsSetRemove(friendsDataSet *set, friendsData *d, friendsError *e);
+void friendsSetRemove(friendsDataSet *set, friendsData *d, friendsError *e)
+{
+  friendsDataList *l;
+  friendsHash hsh;
+  friendsDataSetHash h;
+  friendsDataSetNode *n;
+  friendsData *c;
+
+  friendsAssert(set);
+  friendsAssert(d);
+
+  hsh = friendsGetHash(d);
+  h = friendsSmallHash(hsh);
+  n = set->table[h];
+  for (; n; n = n->next) {
+    c = friendsSetGetData(n, &l);
+    if (!c) continue;
+    if (friendsGetHash(c) != hsh) continue;
+    l = friendsListFind(l, d);
+    if (l) {
+      friendsListRemove(l);
+    }
+    break;
+  }
+}
+
+void friendsSetRemoveAll(friendsDataSet *set, friendsData *d, friendsError *e)
+{
+  friendsDataList *l, *p;
+  friendsHash hsh;
+  friendsDataSetHash h;
+  friendsDataSetNode *n;
+  friendsData *c;
+  int i;
+
+  friendsAssert(set);
+  friendsAssert(d);
+
+  for (i = 0; i < friendsDataSetSize; ++i) {
+    n = set->table[i];
+    for (; n; n = n->next) {
+      l = n->list;
+      if (!l) continue;
+      while ((l = friendsListFind(l, d))) {
+        p = friendsListNext(l);
+        friendsListRemove(l);
+        l = p;
+      }
+    }
+  }
+}
+
+void friendsSetEach(friendsDataSet *set,
+                    friendsBool (*f)(friendsDataList *list, void *a),
+                    void *a)
+{
+  friendsDataList *l;
+  friendsDataSetNode *n;
+  int i;
+
+  friendsAssert(set);
+  friendsAssert(f);
+
+  for (i = 0; i < friendsDataSetSize; ++i) {
+    n = set->table[i];
+    for (; n; n = n->next) {
+      l = n->list;
+      if (!l) continue;
+      if (f(l, a) == friendsFalse) return;
+    }
+  }
+}

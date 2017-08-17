@@ -33,6 +33,10 @@ else()
 endif()
 option(FRIENDS_ENABLE_SJIS  "Enable character set SJIS" ON)
 option(FRIENDS_ENABLE_EUCJP "Enable character set EUC-JP" ON)
+option(FRIENDS_ENABLE_TEST  "Enable test" ON)
+option(FRIENDS_ENABLE_FULLPATH_SOURCE_NAME
+  "Print fullpath of source file on errors" OFF)
+mark_as_advanced(FRIENDS_ENABLE_FULLPATH_SOURCE_NAME)
 
 find_program(RE2C_EXECUTABLE re2c
   HINTS /bin /usr/bin /usr/local/bin)
@@ -108,7 +112,7 @@ set(FRIENDS_C_SOURCES
   friends_io.c friends_error.c
   friends_park.c friends_data.c
   friends_atom.c
-  friends_global.c friends_test.c)
+  friends_global.c)
 set(FRIENDS_LEMON_SOURCES friends_parser.lem)
 set(FRIENDS_RE2C_SOURCES  friends_lexer.re friends_string.re
   friends_printf.re friends_pathname.re
@@ -177,9 +181,14 @@ target_link_libraries(friends libfriends)
 
 set_target_properties(friends PROPERTIES
   INCLUDE_DIRECTORIES
-  "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR}")
+  "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR};${LIBFRIENDS_INCLUDE_DIR}")
 
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/friends-config.h.in"
   "${CMAKE_CURRENT_BINARY_DIR}/friends-config.h"
   )
+
+if (FRIENDS_ENABLE_TEST)
+  enable_testing()
+  add_subdirectory(tests)
+endif()

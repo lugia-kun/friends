@@ -26,6 +26,8 @@
 #cmakedefine WIN32
 #endif
 
+#cmakedefine FRIENDS_ENABLE_FULLPATH_SOURCE_NAME
+
 #cmakedefine FRIENDS_ENABLE_SJIS
 #cmakedefine FRIENDS_ENABLE_EUCJP
 

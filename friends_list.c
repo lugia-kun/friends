@@ -52,6 +52,14 @@ friendsDataList *friendsListPrev(friendsDataList *l)
   return l->prev;
 }
 
+size_t friendsListSize(friendsDataList *l)
+{
+  if (!l) return 0;
+
+  l = friendsListParent(l);
+  return l->size;
+}
+
 friendsData *friendsListData(friendsDataList *l)
 {
   if (!l) return NULL;

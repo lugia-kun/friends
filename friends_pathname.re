@@ -131,9 +131,3 @@ size_t friendsBasename(friendsChar **output,
   return c;
 }
 
-/* Interaction with normal char */
-/*!re2c
-  re2c:define:YYCTYPE = "unsigned char";
-  re2c:flags:x = 0;
-  re2c:flags:8 = 0;
-*/

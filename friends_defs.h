@@ -370,4 +370,36 @@ typedef int friendsFillFunc(friendsParser *p, int count, void *arg);
 #endif
 #endif
 
+/**
+ * @brief __FILE__ （など）からファイル名だけを取り出すのです。
+ * @param name パス名をよこすのです。
+ * @return ファイル名を返すのです。
+ *
+ * スラッシュで終わっていたりとかファイル名を取り出せない時は NULL を
+ * 返すのです。
+ *
+ * 返されるポインタは、渡した名前の一部なのです。
+ *
+ * @note __FILE__ はコンパイラの指定によって相対パスだったり絶対パスだっ
+ *       たりするけど、CMake が生成する Makefile では絶対パスになるよう
+ *       なのです。
+ *
+ * @note この関数は表向きにパスを隠せるだけで、解析ツールを使うとパスは
+ *       バレバレなので注意するのです。
+ */
+const char *friendsSourceFile(const char *name);
+
+/**
+ * @macro FRIENDS_SOURCE_FILE
+ * @brief `friendsSourceFile(__FILE__)` へのショートカットなのです。
+ *
+ * CMake のオプションで FRIENDS_ENABLE_FULLPATH_SOURCE_NAME を有効にす
+ * るとフルパスを返す（__FILE__ を変形せずに返す）のです。
+ */
+#ifdef FRIENDS_ENABLE_FULLPATH_SOURCE_NAME
+#define FRIENDS_SOURCE_FILE __FILE__
+#else
+#define FRIENDS_SOURCE_FILE (friendsSourceFile(__FILE__))
+#endif
+
 #endif

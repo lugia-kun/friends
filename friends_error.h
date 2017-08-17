@@ -1,5 +1,5 @@
 /**
- * @file friends.h
+ * @file friends_error.h
  */
 /* -*- mode: c -*- */
 /* vim: set ft=c: */
@@ -98,10 +98,11 @@ void friendsUnreachableImplement(const char *fname,
 #ifdef NDEBUG
 #define friendsAssert(cond)
 #else
-#define friendsAssert(cond)                                         \
-  do {                                                              \
-    if (!friendsExpect((cond), 0))                                  \
-      friendsAssertImplement(#cond, __FILE__, __LINE__, __func__);  \
+#define friendsAssert(cond)                              \
+  do {                                                   \
+    if (!friendsExpect((cond), 0))                       \
+      friendsAssertImplement(#cond, FRIENDS_SOURCE_FILE, \
+                             __LINE__, __func__);        \
   } while(0)
 #endif
 
@@ -120,7 +121,8 @@ void friendsUnreachableImplement(const char *fname,
 #define friendsUnreachable()
 #endif /* __GNUC__ */
 #else
-#define friendsUnreachable() friendsUnreachableImplement(__FILE__, __LINE__, __func__)
+#define friendsUnreachable() \
+  friendsUnreachableImplement(FRIENDS_SOURCE_FILE, __LINE__, __func__)
 #endif /* NDEBUG */
 
 void friendsSetErrorImplement(friendsError *errpvar, friendsError ev);
@@ -130,7 +132,6 @@ void friendsSetErrorImplement(friendsError *errpvar, friendsError ev);
 
 #define friendsSetErrorV(errvar, esym)                  \
   friendsSetErrorImplement(&errvar, friendsError##esym)
-
 
 void friendsSetErrorFromErrno(friendsError *errpvar, int errn);
 

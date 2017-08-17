@@ -10,6 +10,10 @@
  * 2つ目は、リストのデータを保持する子なのです。
  * `friendsListNext`/`friendsListPrev` 関数などで使われるのです。
  * データの設定は子にしかできないのです。
+ *
+ * ちなみに、リストのデータは単なるポインタでしかなくて、リストの操作自体には、
+ * `friendsData` のデータを利用することは無いので、ある種の合意が取れれば
+ * 別のデータを入れても安全なのです。
  */
 /* -*- mode: c -*- */
 /* vim: set ft=c: */
@@ -32,6 +36,8 @@ friendsDataList *friendsNewList(friendsError *e);
  *
  * `l` は親でも子でも良いのです。いずれの場合もリスト全体を削除するの
  * です。
+ *
+ * リストの中のデータは削除しないのです。
  */
 void friendsDeleteList(friendsDataList *l);
 
@@ -52,6 +58,13 @@ friendsDataList *friendsListNext(friendsDataList *l);
  * `l` が親の場合は最後の子を返すのです。
  */
 friendsDataList *friendsListPrev(friendsDataList *l);
+
+/**
+ * @brief 要素数を得るのです。
+ * @param l リストをよこすのです。
+ * @return 要素数を返すのです。
+ */
+size_t friendsListSize(friendsDataList *l);
 
 /**
  * @brief 要素のデータを得るのです。

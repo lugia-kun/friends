@@ -506,11 +506,14 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
       base = 16;
       sign = ' ';
       flags |= ZEROPAD;
+      /*
       if (width == 0) {
         width = sizeof(void *) * 2 + 2;
       }
+      */
       friendsUnescapeStringLiteral(&tmp, "0x", err);
       width -= 2;
+      if (width < 0) width = 0;
       if (friendsAnyError(*err)) goto error;
       szcnt += copyChars(&dstc, tmp, wlim, 0);
       free(tmp);
@@ -661,7 +664,11 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
     strs_conversion:
       if (flags & LONG) goto fstr_conversion;
       chrp = va_arg(ap, const char *);
-      friendsUnescapeStringLiteral(&pstr, chrp, err);
+      if (chrp) {
+        friendsUnescapeStringLiteral(&pstr, chrp, err);
+      } else {
+        friendsUnescapeStringLiteral(&pstr, "(null)", err);
+      }
       if (friendsAnyError(*err)) goto error;
       fchrp = pstr;
       goto dostr_conversion;
@@ -669,6 +676,10 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
     fstr_conversion:
       fchrp = va_arg(ap, const friendsChar *);
       pstr = NULL;
+      if (!fchrp) {
+        friendsUnescapeStringLiteral(&pstr, "(null)", err);
+        fchrp = pstr;
+      }
       goto dostr_conversion;
 
     dostr_conversion:

@@ -7,6 +7,7 @@
 #include "friends_test.h"
 #include "friends_error.h"
 #include "friends_string.h"
+#include "friends_list.h"
 
 friendsStaticThreadLocal int friendsTestErrorCountValue = 0;
 
@@ -27,7 +28,7 @@ void friendsTestExpectPrint(const char *file, long line,
                    "\\u306e\\u3067\\u3059\\u3002 (%d)", /* のです。 */
                    data_format, data_format, friendsTestErrorCountValue);
   if (friendsAnyError(e)) {
-    friendsPrintError(friendsErrorLevelError, __FILE__, __LINE__, 0,
+    friendsPrintError(friendsErrorLevelError, file, line, 0,
                       "Could not format message", e);
     return;
   }
@@ -38,7 +39,7 @@ void friendsTestExpectPrint(const char *file, long line,
   free(s);
 
   if (friendsAnyError(e)) {
-    friendsPrintError(friendsErrorLevelError, __FILE__, __LINE__, 0,
+    friendsPrintError(friendsErrorLevelError, file, line, 0,
                       "Could not format message", e);
     return;
   }
@@ -61,15 +62,17 @@ void friendsTestExpectTextImplement(const friendsChar *object,
   friendsChar *fs;
   friendsError e;
 
+  friendsAssert(expect);
+
   e = friendsNoError;
   friendsUnescapeStringLiteral(&fs, expect, &e);
   if (friendsAnyError(e)) {
-    friendsPrintError(friendsErrorLevelError, __FILE__, __LINE__, 0,
+    friendsPrintError(friendsErrorLevelError, file, line, 0,
                       "Could not format message", e);
     return;
   }
 
-  if (friendsStringCompare(object, fs) != 0) {
+  if (!object || friendsStringCompare(object, fs) != 0) {
     friendsTestExpectPrint(file, line, "%ls", object_name, object, fs);
   }
 

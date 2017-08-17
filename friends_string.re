@@ -332,3 +332,50 @@ int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
 
   return n;
 }
+
+
+/*!re2c
+  re2c:define:YYCTYPE = "unsigned char";
+  re2c:flags:x = 0;
+  re2c:flags:8 = 0;
+  re2c:yyfill:enable = 0;
+*/
+
+const char *friendsSourceFile(const char *name)
+{
+  const char *YYCURSOR;
+  const char *lps;
+
+  if (!name) return NULL;
+
+  lps = name;
+  YYCURSOR = name;
+
+  for (;;) {
+    /*!re2c
+      re2c:indent:top = 2;
+
+      *      { continue; }
+      "\x00" { break; }
+      "/"    { lps = YYCURSOR; continue; }
+      "\\"   { goto bslash; }
+      ":"    { goto colon; }
+    */
+
+    friendsUnreachable();
+
+  bslash:
+#ifdef WIN32
+    lps = YYCURSOR;
+#endif
+    continue;
+
+  colon:
+    continue;
+  }
+
+  if (*lps == '\0') {
+    return NULL;
+  }
+  return lps;
+}

@@ -9,6 +9,8 @@
 
 #include "friends_defs.h"
 
+typedef void friendsTestErrorHandler(void);
+
 /**
  * @brief テストのメッセージを表示するのです。
  * @param file ファイル名をよこすのです。
@@ -80,12 +82,12 @@ int friendsTestErrorCount(void);
  * @warning このマクロの引数には絶対に副作用を発生されるものを入れては
  *          いけないのです。
  */
-#define friendsTestExpect(object, expect, formatter, comparator)    \
-  do {                                                              \
-    if (comparator((object), (expect)) != 0) {                      \
-      friendsTestExpectPrint(__FILE__, __LINE__, formatter,         \
-                             #object, (object), (expect));          \
-    }                                                               \
+#define friendsTestExpect(object, expect, formatter, comparator)        \
+  do {                                                                  \
+    if (comparator((object), (expect)) != 0) {                          \
+      friendsTestExpectPrint(FRIENDS_SOURCE_FILE, __LINE__, formatter,  \
+                             #object, (object), (expect));              \
+    }                                                                   \
   } while(0)
 
 /**
@@ -97,7 +99,7 @@ int friendsTestErrorCount(void);
  */
 #define friendsTestExpectText(object, expect)                       \
   friendsTestExpectTextImplement((object), (expect),                \
-                                 __FILE__, __LINE__,                \
+                                 FRIENDS_SOURCE_FILE, __LINE__,     \
                                  #object)
 
 /**
@@ -120,7 +122,7 @@ int friendsTestErrorCount(void);
 #define friendsTestExpectCS(object, expect, actual_s, expect_s, comparator) \
   do {                                                                  \
     if (comparator((object), (expect)) != 0) {                          \
-      friendsTestExpectPrint(__FILE__, __LINE__, "%s",                  \
+      friendsTestExpectPrint(FRIENDS_SOURCE_FILE, __LINE__, "%s",       \
                              #object, actual_s, expect_s);              \
     }                                                                   \
   } while(0)
@@ -145,7 +147,7 @@ int friendsTestErrorCount(void);
 #define friendsTestExpectFS(object, expect, actual_s, expect_s, comparator) \
   do {                                                                  \
     if (comparator((object), (expect)) != 0) {                          \
-      friendsTestExpectPrint(__FILE__, __LINE__, "%ls",                 \
+      friendsTestExpectPrint(FRIENDS_SOURCE_FILE, __LINE__, "%ls",      \
                              #object, actual_s, expect_s);              \
     }                                                                   \
   } while(0)
