@@ -121,6 +121,7 @@ int main(int argc, char **argv)
   friendsData *d;
   friendsChar *ch;
   const friendsChar *cch;
+  const friendsAtomData *at;
   friendsDataList *l;
   int ret;
   int i;
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
   e = friendsNoError;
   ret = EXIT_SUCCESS;
   s = NULL;
+  ch = NULL;
   park = friendsNewPark(&e);
   eerror("friendsNewPark");
 
@@ -218,7 +220,7 @@ int main(int argc, char **argv)
     eerror("friendsSetInsert");
   }
 
-  for (i = 10; i < 1000; i += 100) {
+  for (i = 10; i < 2000; i += 100) {
     d = newData(park, friendsNumricAtom, i, NULL, &e);
     eerror("newData");
 
@@ -244,6 +246,8 @@ int main(int argc, char **argv)
                             "\\u30b5\\u30fc\\u30d0\\u30eb"  /* サーバル */);
     }
   }
+  free(ch);
+  ch = NULL;
 
   friendsUnescapeStringLiteral(&ch,
                                "\\u304b\\u3070\\u3093"  /* かばん */,
@@ -262,6 +266,8 @@ int main(int argc, char **argv)
                             "\\u304b\\u3070\\u3093"  /* かばん */);
     }
   }
+  free(ch);
+  ch = NULL;
 
   friendsUnescapeStringLiteral(&ch,
                                "\\u30ab\\u30d0\\u30f3"  /* カバン */,
@@ -273,7 +279,10 @@ int main(int argc, char **argv)
     friendsTestExpectFS(l, NULL, ch, NULL, friendsTestTrue);
   }
 
-  l = friendsSetFindNumericAtom(set, 0);
+  free(ch);
+  ch = NULL;
+
+  l = friendsSetFindNumericAtom(s, 0);
   if (!l) {
     friendsTestExpectCS(l, NULL, NULL, "0", friendsTestTrue);
   } else {
@@ -291,7 +300,99 @@ int main(int argc, char **argv)
     }
   }
 
+  l = friendsSetFindNumericAtom(s, 999);
+  if (l) {
+    friendsTestExpectCS(l, NULL, "999", NULL, friendsTestTrue);
+  }
+
+  friendsUnescapeStringLiteral(&ch,
+                               "\\u30b5\\u30fc\\u30d0\\u30eb"  /* サーバル */,
+                               &e);
+  eerror("friendsUnescapeStringliteral");
+
+  l = friendsSetFindText(s, friendsAtom, ch);
+  if (!l) {
+    friendsTestExpectFS(l, NULL, NULL, ch, friendsTestTrue);
+  }
+
+  l = friendsListBegin(l);
+  d = friendsListData(l);
+  if (!d) {
+    friendsTestExpectFS(l, NULL, NULL, ch, friendsTestTrue);
+  }
+  free(ch);
+  ch = NULL;
+
+  friendsSetRemove(s, d, &e);
+  eerror("friendsSetRemove");
+
+  printSet(s);
+
+  /* UTF-16 モードでは 8 は「サーバルキャット」と同じハッシュ値だったのです（経験則）。 */
+  l = friendsSetFindNumericAtom(s, 8);
+  if (!l) {
+    friendsTestExpectCS(l, NULL, NULL, "8", friendsTestTrue);
+  }
+
+  l = friendsListBegin(l);
+  d = friendsListData(l);
+  if (!d) {
+    friendsTestExpectCS(l, NULL, NULL, "8", friendsTestTrue);
+  }
+
+  friendsSetRemove(s, d, &e);
+  eerror("friendsSetRemove");
+
+  printSet(s);
+
+  /* UTF-8 モードでは 3 は「かばん」と同じハッシュ値だったのです（経験則）。 */
+  l = friendsSetFindNumericAtom(s, 3);
+  if (!l) {
+    friendsTestExpectCS(l, NULL, NULL, "3", friendsTestTrue);
+  }
+
+  l = friendsListBegin(l);
+  d = friendsListData(l);
+  if (!d) {
+    friendsTestExpectCS(l, NULL, NULL, "3", friendsTestTrue);
+  }
+
+  friendsSetRemove(s, d, &e);
+  eerror("friendsSetRemove");
+
+  printSet(s);
+
+  friendsUnescapeStringLiteral(&ch,
+                               "\\u304b\\u3070\\u3093"  /* かばん */,
+                               &e);
+  eerror("friendsUnescapeStringliteral");
+
+  l = friendsSetFindText(s, friendsAtom, ch);
+  if (!l) {
+    friendsTestExpectFS(l, NULL, NULL, ch, friendsTestTrue);
+  }
+
+  l = friendsListBegin(l);
+  d = friendsListData(l);
+  if (!d) {
+    friendsTestExpectFS(l, NULL, NULL, ch, friendsTestTrue);
+  }
+  free(ch);
+  ch = NULL;
+
+  /* 1 つだけ消すのです。 */
+  friendsSetRemove(s, d, &e);
+  eerror("friendsSetRemove");
+
+  printSet(s);
+
+  friendsSetRemoveAll(s, d, &e);
+  eerror("friendsSetRemoveAll");
+
+  printSet(s);
+
  clean:
+  if (ch)   free(ch);
   if (s)    friendsDeleteSet(s);
   if (park) friendsDeletePark(park);
   i = friendsTestErrorCount();
