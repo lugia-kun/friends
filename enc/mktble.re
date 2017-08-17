@@ -1,7 +1,6 @@
 /* -*- mode: c -*- */
 /* vim: set ft=c: */
 
-#define _GNU_SOURCE // for glibc.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -355,24 +354,16 @@ int parse_ucm(tblset *tset, FILE *fp)
 int cs_printf(FILE *output,
               int top, const mbcsChar *indent, const char *stmt, ...)
 {
-  int r;
-  char *fstmt;
   va_list ap;
   int i;
-
-  va_start(ap, stmt);
-  r = vasprintf(&fstmt, stmt, ap);
-  va_end(ap);
-
-  if (r < 0) {
-    return 1;
-  }
 
   for (i = 0; i < top; i++) {
     fprintf(output, "%s", indent ? indent : (mbcsChar *)" ");
   }
-  fprintf(output, "%s", fstmt);
-  free(fstmt);
+  va_start(ap, stmt);
+  vfprintf(output, stmt, ap);
+  va_end(ap);
+
   return 0;
 }
 

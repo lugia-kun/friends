@@ -22,7 +22,7 @@ int friendsFCharToUtf8(char **buf, const friendsChar *b, friendsError *err);
 /**
  * \brief UTF-8 でエンコードされた文字列を
  *        Friends の文字コードに変換するのです。
- * \param ret 書き込む場所をよこすのです。
+ * \param b 書き込む場所をよこすのです。
  * \param buf 変換する文字列をよこすのです。
  * \param err NULL でない値をよこしてくれたなら、エラーの情報を書き込むのです。
  * \return 変換した配列要素数を返すのです。エラーの時は -1 を返すのです。
