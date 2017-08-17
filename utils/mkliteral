@@ -1,9 +1,16 @@
 #!ruby
 
 while l = $stdin.gets
-  d = l.chomp.encode("UTF-16LE")
+  d = l.chomp.encode("UTF-32LE")
   while !(piece = d.slice!(0...5)).empty?
-    x = piece.inspect.gsub("\\", "\\\\\\\\").downcase
-    puts "#{x}  /* #{piece.encode("UTF-8")} */"
+    a = piece.unpack("V*")
+    a.map! do |x|
+      if x < 0x10000
+        "\\\\u%04x" % x
+      else
+        "\\\\U%08x" % x
+      end
+    end
+    puts "\"#{a.join}\"  /* #{piece.encode("UTF-8")} */"
   end
 end
