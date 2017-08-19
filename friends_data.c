@@ -52,7 +52,7 @@ void friendsDeleteData(friendsData *d)
   friendsDeletePointer(d->park, d);
 
   if (d->deleter)     d->deleter(d->data);
-  if (d->txt_deleter) d->txt_deleter((friendsChar *)d->txt);
+  if (d->txt_deleter) d->txt_deleter(d->txt);
   free(d);
 }
 
@@ -80,14 +80,6 @@ const friendsVariableData *friendsGetVariable(friendsData *d)
   if (friendsGetType(d) != friendsVariable) return NULL;
 
   return (friendsVariableData *)d->data;
-}
-
-const friendsPropositionData *friendsGetProposition(friendsData *d)
-{
-  if (!d) return NULL;
-  if (friendsGetType(d) != friendsProposition) return NULL;
-
-  return (friendsPropositionData *)d->data;
 }
 
 const friendsChar *friendsDataToText(friendsData *d)

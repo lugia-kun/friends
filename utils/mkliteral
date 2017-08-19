@@ -1,16 +1,57 @@
 #!ruby
 
+LINE_LIMIT = 30
+
 while l = $stdin.gets
   d = l.chomp.encode("UTF-32LE")
-  while !(piece = d.slice!(0...5)).empty?
-    a = piece.unpack("V*")
-    a.map! do |x|
-      if x < 0x10000
-        "\\\\u%04x" % x
-      else
-        "\\\\U%08x" % x
-      end
+  a = d.unpack("V*")
+  a.map! do |x|
+    u = [x].pack("U")
+    if x < 0x7f
+      [case x
+       when 0x00
+         "\\0"
+       when 0x07
+         "\\a"
+       when 0x08
+         "\\b"
+       when 0x09
+         "\\t"
+       when 0x0a
+         "\\n"
+       when 0x0d
+         "\\r"
+       when 0x1b
+         "\\e"
+       when 0x22
+         "\\\""
+       when 0x5c
+         "\\\\"
+       else
+         if x >= 0x20
+           "%c" % x
+         else
+           "\\\\u%04x" % x
+         end
+       end,
+       u]
+    elsif x < 0x10000
+      ["\\\\u%04x" % x, u]
+    else
+      ["\\\\U%08x" % x, u]
     end
-    puts "\"#{a.join}\"  /* #{piece.encode("UTF-8")} */"
+  end
+  while !a.empty?
+    l = 0
+    t = []
+    while l < LINE_LIMIT
+      x = a.shift
+      l += x[0].length
+      t << x
+      break if a.empty?
+    end
+    estr = t.map { |x| x[0] }.join
+    ustr = t.map { |x| x[1] }.join
+    puts "\"#{estr}\"  /* #{ustr} */"
   end
 end

@@ -34,7 +34,7 @@ friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e);
  *
  * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に捨てられるのです。
  */
-friendsData *friendsSetTextAtom(friendsData *dest, const friendsChar *t,
+friendsData *friendsSetTextAtom(friendsData *dest, friendsChar *t,
                                 friendsError *e);
 
 /**

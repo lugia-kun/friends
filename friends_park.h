@@ -25,6 +25,24 @@ friendsPark *friendsNewPark(friendsError *e);
 void friendsDeletePark(friendsPark *park);
 
 /**
+ * @brief パークが捨てられているかどうかを調べるのです。
+ * @param park パークをよこすのです。
+ * @return 捨てられているなら friendsTrue を返すのです。
+ *
+ * ここでいう「捨てられている」は `friendsDeletePark` の呼び出し中にあ
+ * るかを意味するのです。例えば、各データが他の何らかのデータを所有す
+ * る時、その削除関数の実装において、`friendsDeleteData` 関数を呼ぶか
+ * どうかを決めなければならないのです。パークを捨てている最中にある時
+ * にデータの削除関数から `friendsDeleteData` を呼ぶと二重解放になって
+ * しまうのです。
+ *
+ * この関数を使うとそれを回避することができるのです。でも、
+ * `friendsData` のデータはパークが捨てられるときには削除されるので、
+ * 削除関数内で捨てる処理をしないことをおすすめするのです。
+ */
+friendsBool friendsParkIsDeleting(friendsPark *park);
+
+/**
  * @brief ポインタをパークの管理下に置くのです。
  * @param park パークをよこすのです。
  * @param p 管理させるポインタをよこすのです。

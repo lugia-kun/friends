@@ -58,6 +58,13 @@ void friendsDeletePark(friendsPark *park)
   free(park);
 }
 
+friendsBool friendsParkIsDeleting(friendsPark *park)
+{
+  friendsAssert(park);
+
+  return park->deleting;
+}
+
 void *friendsAddPointer(friendsPark *park, void *p,
                         friendsPointerDeleter *deleter,
                         friendsError *e)

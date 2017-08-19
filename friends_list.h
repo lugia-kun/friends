@@ -243,4 +243,20 @@ void friendsListRemove(friendsDataList *l);
 void friendsListRemoveAt(friendsDataList *l,
                          int index, friendsError *e);
 
+/**
+ * @brief データにリストを設定するのです。
+ * @param dest 設定先のデータをよこすのです。
+ * @param l 設定するリストをよこすのです。
+ * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ *
+ * `l` は親でも子でも良いのです。ただし、実際に設定するデータは親になるのです。
+ */
+void friendsSetList(friendsData *dest, friendsDataList *l, friendsError *err);
+
+/**
+ * @brief データからリストを得るのです。
+ * @param d データをよこすのです。
+ */
+friendsDataList *friendsGetList(friendsData *d);
+
 #endif

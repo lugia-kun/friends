@@ -137,6 +137,9 @@ typedef enum {
   friendsVariable,     /*!< 変数 */
   friendsProposition,  /*!< 命題 */
 
+  friendsArgument,     /*!< 引数 */
+  friendsEtcetra,      /*!< リスト省略 */
+
   friendsList,  /*!< リスト */
   friendsSet,   /*!< セット */
 
@@ -153,10 +156,12 @@ typedef enum {
 
 /**
  * @brief 真偽値を表すのです。
+ *
+ * できれば比較する時は列挙値と比較するのです。
  */
 typedef enum {
-  friendsFalse  = 0,
-  friendsTrue   = 1,
+  friendsFalse = 0,
+  friendsTrue  = 1,
 } friendsBool;
 
 struct friendsFileT;
@@ -173,6 +178,9 @@ typedef enum {
   friendsErrorValidType,     /*!< 有効なデータ型になっている（未設定のデータが必要） */
 
   friendsErrorListIndex,     /*!< リストのインデックスが範囲外 */
+  friendsErrorListNested,    /*!< リストがネストしている */
+
+  friendsErrorNoArgument,    /*!< 命題の引数がない */
 
   /* POSIX System Call Errors */
   friendsError2BIG,          /*!< 引き数リストが長過ぎる */
@@ -352,7 +360,7 @@ typedef int friendsFillFunc(friendsParser *p, int count, void *arg);
  *
  * コンパイラが C11 に対応していると言っているなら、C11 の記法を使うのです。
  *
- * それ以外で、GNU C Compiler を使っているなら、gcc を拡張を使うのです。
+ * それ以外で、GNU C Compiler を使っているなら、gcc の拡張を使うのです。
  * MSVC を使っているなら、MSVC の拡張を使うのです。
  *
  * 上のどれもダメなら、単に static としておくのです。

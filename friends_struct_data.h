@@ -14,7 +14,7 @@ struct friendsDataListT
   friendsData     *data;   /*!< データ */
   friendsDataList *next;   /*!< 次のデータ */
   friendsDataList *prev;   /*!< 前のデータ */
-  friendsDataList *begin;  /*!< 最初のデータ */
+  friendsDataList *begin;  /*!< 親へのポインタ */
   size_t size;             /*!< リストの要素数（最初のデータのみ使用） */
 };
 
@@ -37,7 +37,7 @@ struct friendsDataT
   friendsHash  hash;                  /*!< ハッシュ値（連想配列型で使用） */
   void   *data;                       /*!< データへのポインタ */
   friendsPointerDeleter *deleter;     /*!< データの削除関数 */
-  const friendsChar *txt;             /*!< データの文字列情報 */
+  friendsChar *txt;                   /*!< データの文字列情報 */
   friendsPointerDeleter *txt_deleter; /*!< テキストデータの削除関数 */
 };
 
@@ -49,7 +49,7 @@ struct friendsAtomDataT {
   friendsAtomType type;          /*!< アトムの型 */
   union friendsAtomInternalT {
     int n;                       /*!< 数値アトムの値 */
-    const friendsChar *t;        /*!< 文字列アトムの値 */
+    friendsChar *t;              /*!< 文字列アトムの値 */
   } data;                        /*!< アトムのデータ */
 };
 
@@ -58,16 +58,16 @@ struct friendsVariableDataT {
   int offset;                /*!< 差異（「〜の次」を使用した回数） */
 };
 
-struct friendsArgumentT {
-  friendsData *variable;       /*!< 変数またはアトム、またはそのリスト */
-  const friendsChar *particle; /*!< 助詞 */
+struct friendsArgumentDataT {
+  friendsData *variable;     /*!< 変数またはアトム、またはそのリスト */
+  friendsChar *particle;     /*!< 助詞 */
 };
 
 struct friendsPropositionDataT
 {
-  friendsData *conditions;     /*!< 前提条件 */
-  friendsData *arguments;      /*!< パラメータのリスト */
-  const friendsChar *verb;     /*!< 述語 */
+  friendsDataList *conditions; /*!< 前提条件 */
+  friendsDataList *arguments;  /*!< パラメータのリスト */
+  friendsChar *verb;           /*!< 述語 */
   friendsBool  stop;           /*!< たーのしー！ */
 };
 

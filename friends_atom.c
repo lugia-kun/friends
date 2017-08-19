@@ -70,7 +70,7 @@ friendsData *friendsSetNumeralAtom(friendsData *data, int a, friendsError *e)
   return data;
 }
 
-friendsData *friendsSetTextAtom(friendsData *data, const friendsChar *text,
+friendsData *friendsSetTextAtom(friendsData *data, friendsChar *text,
                                 friendsError *e)
 {
   friendsAssert(data);

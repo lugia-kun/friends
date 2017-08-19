@@ -208,6 +208,12 @@ int friendsErrorString(friendsChar **buf, friendsError ecnv)
       "\\u306e\\u7bc4\\u56f2\\u5916\\u306a"  /* の範囲外な */
       "\\u306e\\u3067\\u3059\\u3002";        /* のです。 */
     break;
+  case friendsErrorNoArgument:
+    strp =
+      "\\u30d5\\u30ec\\u30f3\\u30ba\\u306e"  /* フレンズの */
+      "\\u5f15\\u6570\\u304c\\u306a\\u3044"  /* 引数がない */
+      "\\u306e\\u3067\\u3059\\u3002";        /* のです。 */
+    break;
 
   case friendsError2BIG:
   case friendsErrorOVERFLOW:

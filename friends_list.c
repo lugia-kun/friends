@@ -4,6 +4,7 @@
 #include "friends_error.h"
 #include "friends_defs.h"
 #include "friends_list.h"
+#include "friends_data.h"
 #include "friends_struct_data.h"
 
 friendsDataList *friendsNewList(friendsError *e)
@@ -320,4 +321,29 @@ void friendsListRemoveAt(friendsDataList *l,
   }
 
   friendsListRemove(l);
+}
+
+void friendsSetList(friendsData *dest, friendsDataList *l, friendsError *err)
+{
+  friendsAssert(dest);
+  friendsAssert(l);
+
+  if (friendsGetType(dest) != friendsInvalidType) {
+    friendsSetError(err, ValidType);
+    return;
+  }
+
+  l = friendsListParent(l);
+
+  dest->data = l;
+  dest->type = friendsList;
+  dest->deleter = (friendsPointerDeleter *)friendsDeleteList;
+}
+
+friendsDataList *friendsGetList(friendsData *d)
+{
+  friendsAssert(d);
+
+  if (friendsGetType(d) != friendsList) return NULL;
+  return d->data;
 }
