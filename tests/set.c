@@ -53,7 +53,6 @@ void printListAtom(listPrinterController *x,
 
 friendsBool listPrinter(friendsDataList *l, void *a)
 {
-  friendsAtomType at;
   const friendsAtomData *ad;
   friendsData *d;
   const friendsChar *ch;

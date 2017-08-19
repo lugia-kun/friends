@@ -29,6 +29,9 @@ int friendsFCharTo@NAME@(char **buf, const friendsChar *b, friendsError *err)
   const friendsChar *mark;
   const char *mbcs;
 
+  /* mark は使うかもしれないし、使わないかもしれないのです。 */
+  friendsUnUsed(mark);
+
   friendsAssert(b);
   friendsAssert(buf);
 

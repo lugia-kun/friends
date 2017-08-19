@@ -38,6 +38,9 @@ int friends@NAME@ToFChar(friendsChar **ret, const char *buf, friendsError *err)
   friendsChar fchar[2];
 #endif
 
+  /* mark は使うかもしれないし、使わないかもしれないのです。 */
+  friendsUnUsed(mark);
+
   friendsAssert(ret);
   friendsAssert(buf);
 

@@ -54,6 +54,9 @@ size_t friendsStringCharCount(const friendsChar *start,
   const friendsChar *YYLIMIT;
   const friendsChar *YYMARKER;
 
+  /* UTF-8 モードでは MARKER を使うのです。 */
+  friendsUnUsed(YYMARKER);
+
   friendsAssert(start);
 
   if (start == end) return 0;
@@ -122,19 +125,16 @@ int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
   int step;
   friendsChar *tmp;
   const char *YYCURSOR;
-  const char *YYMARKER;
-  const char *YYLIMIT;
   const char *token;
   const char *ptoken;
   friendsChar *dstCursor;
+  friendsChar copy_char;
 
   friendsAssert(output);
   friendsAssert(input);
 
-  YYLIMIT = input + strlen(input) + 2;
   n = 0;
   for (step = 0; step < 2; ++step) {
-    friendsChar copy_char;
     int i;
 
     if (step) {
@@ -164,7 +164,7 @@ int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
 
     copychar:
       if (step) {
-        *dstCursor++ = *token;
+        *dstCursor++ = copy_char;
       } else {
         n++;
       }

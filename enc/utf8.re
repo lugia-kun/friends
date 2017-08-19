@@ -24,10 +24,12 @@
 
 int friendsFCharToUtf8(char **buf, const friendsChar *b, friendsError *err)
 {
-  int step;
+#ifndef FRIENDS_USE_UTF8_INTERNAL
   const friendsChar *tok;
+#endif
   const friendsChar *cur;
   char *t, *p;
+  int step;
   int n, limit;
 
   friendsAssert(b);

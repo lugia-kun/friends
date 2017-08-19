@@ -73,10 +73,11 @@ friendsData *friendsSetNumeralAtom(friendsData *data, int a, friendsError *e)
 friendsData *friendsSetTextAtom(friendsData *data, friendsChar *text,
                                 friendsError *e)
 {
+  friendsAtomData *d;
+
   friendsAssert(data);
   friendsAssert(data->park);
   friendsAssert(text);
-  friendsChar *s;
 
   if (data->type != friendsInvalidType) {
     friendsSetError(e, ValidType);
@@ -88,7 +89,6 @@ friendsData *friendsSetTextAtom(friendsData *data, friendsChar *text,
     return NULL;
   }
 
-  friendsAtomData *d;
   d = friendsMalloc(sizeof(friendsAtomData), e);
   if (!d) {
     return NULL;

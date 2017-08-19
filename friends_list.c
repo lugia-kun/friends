@@ -294,8 +294,6 @@ void friendsListRemove(friendsDataList *l)
 void friendsListRemoveAt(friendsDataList *l,
                          int index, friendsError *e)
 {
-  friendsDataList *n, *p;
-
   friendsAssert(l);
 
   if (friendsListIsParent(l) == friendsTrue) {

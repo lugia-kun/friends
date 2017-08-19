@@ -288,10 +288,7 @@ void friendsSetRemove(friendsDataSet *set, friendsData *d, friendsError *e)
 void friendsSetRemoveAll(friendsDataSet *set, friendsData *d, friendsError *e)
 {
   friendsDataList *l, *p;
-  friendsHash hsh;
-  friendsDataSetHash h;
   friendsDataSetNode *n;
-  friendsData *c;
   int i;
 
   friendsAssert(set);

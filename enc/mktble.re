@@ -276,6 +276,7 @@ int parse_ucm(tblset *tset, FILE *fp)
       "CHARMAP" { start_charmap = 1; continue; }
       "<code_set_name>"  { goto code_set_name; }
       "<mb_cur_max>"     { goto mb_cur_max; }
+      "<mb_cur_min>"     { goto mb_cur_min; }
       "<uconv_class>"    { goto uconv_class; }
      */
 
@@ -342,7 +343,6 @@ int parse_ucm(tblset *tset, FILE *fp)
     continue;
   }
 
- end:
   parser_free(p);
   return 0;
 
@@ -739,7 +739,6 @@ int embed_code(tblset *set, FILE *input, FILE *output)
     continue;
   }
 
- end:
   parser_free(p);
   return 0;
 
@@ -786,7 +785,6 @@ int main(int argc, char **argv)
 {
   FILE *fp, *ofp;
   tblset tset;
-  charInfo *cip;
   int ret;
 
   memset(&tset, 0, sizeof(tblset));

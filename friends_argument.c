@@ -70,7 +70,6 @@ void friendsSetArgument(friendsData *dest, friendsData *d,
 {
   friendsArgumentListTestData test_data;
   friendsArgumentData *a;
-  friendsDataList *l;
   friendsChar *ch;
   int x;
 
@@ -100,6 +99,10 @@ void friendsSetArgument(friendsData *dest, friendsData *d,
     x = friendsAsprintCF(&ch, err, "%s %ls",
                          "\\uff08\\u30ea\\u30b9\\u30c8\\uff09" /* （リスト） */,
                          particle);
+  }
+  if (x < 0) {
+    free(a);
+    return;
   }
 
   a->variable = d;

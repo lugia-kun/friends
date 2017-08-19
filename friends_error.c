@@ -20,12 +20,9 @@ void friendsPrintErrorV(friendsErrorLevel elvl,
                         const char *filename, long int line, long int column,
                         const char *format, va_list ap)
 {
-  friendsChar *fout;
   friendsError e;
-  char *lvlmsg;
   friendsChar *b, *t;
   friendsChar *fc;
-  const friendsCodeSet *cset;
   friendsStaticThreadLocal friendsErrorLevel recurs_detector = 0;
   friendsStaticThreadLocal const char *ofile;
   friendsStaticThreadLocal long int oline;

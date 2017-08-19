@@ -21,7 +21,6 @@ static const friendsChar *lastSeparator(const friendsChar *input)
   const friendsChar *lastS;
   const friendsChar *token;
   const friendsChar *YYCURSOR;
-  const friendsChar *YYMARKER;
 
   YYCURSOR = input;
   lastS = NULL;

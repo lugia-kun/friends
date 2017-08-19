@@ -18,7 +18,6 @@ friendsBool listPrinter(friendsDataList *l, void *a)
   const friendsAtomData *at;
   int n;
   const friendsChar *s;
-  friendsHash h;
 
   friendsUnUsed(a);
 
@@ -37,7 +36,6 @@ friendsBool listPrinter(friendsDataList *l, void *a)
     return friendsTrue;
   }
 
-  h = friendsGetHash(d);
   s = friendsGetAtomText(at, NULL);
   if (s) {
     friendsPrintCF(stdout, NULL, "<text> %ls\n", s);
@@ -67,7 +65,6 @@ int main(int argc, char **argv)
   friendsData *d;
   friendsDataList *l, *p;
   friendsError e;
-  friendsChar *ftxt;
   const friendsChar *ctxt;
   const friendsAtomData *at;
   int ret;

@@ -228,7 +228,6 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
                     const friendsChar *format, va_list ap)
 {
   const friendsChar *YYCURSOR;
-  const friendsChar *YYMARKER;
   const friendsChar *token;
   friendsChar *outp;
   friendsChar *dstc;
@@ -242,7 +241,6 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
   long long int intval;
   double fltval;
   int base;
-  char *ctmp;
   const friendsChar *fchrp;
   const char *chrp;
   va_list aq;
@@ -714,7 +712,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
       pstr = NULL;
       continue;
 
-    hexfloat_conversion:;
+    hexfloat_conversion:
 
     exponent_conversion:;
 

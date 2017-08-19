@@ -10,7 +10,6 @@
 
 friendsPark *friendsNewPark(friendsError *e)
 {
-  int i;
   friendsPark *p;
 
   p = (friendsPark *)calloc(sizeof(friendsPark), 1);
