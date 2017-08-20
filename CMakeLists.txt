@@ -17,6 +17,10 @@ CHECK_TYPE_SIZE("unsigned wchar_t" WCHAR_T)
 CHECK_TYPE_SIZE("unsigned short"   USHORT_T)
 CHECK_TYPE_SIZE("uint16_t"         UINT16_T)
 
+if(${CMAKE_C_COMPILER_ID} MATCHES MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
+endif()
+
 if("${WCHAR_T}" EQUAL 2)
   set(FRIENDS_CTYPE "WCHAR_T")
 elseif("${USHORT_T}" EQUAL 2)
