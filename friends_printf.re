@@ -128,7 +128,7 @@ static int friendsUltoJ(friendsChar **buf, unsigned long long int v)
   static const char *smalldigits[] = {
     "\\u5341", "\\u767e", "\\u5343"             /* 十百千 */
   };
-  /* 実のところ lli が 64bit でも 京 までしか使わない */
+  /* 実のところ lli が 64bit でも 京 までしか使わないのです */
   static const char *largedigits[] = {
     "\\u4e07", "\\u5104", "\\u5146", "\\u4eac", /* 万億兆京 */
     "\\u5793", "\\U00025771", "\\u7a63",        /* 垓𥝱穣 */
@@ -712,7 +712,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
       pstr = NULL;
       continue;
 
-    hexfloat_conversion:
+    hexfloat_conversion:;
 
     exponent_conversion:;
 

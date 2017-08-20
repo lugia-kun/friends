@@ -74,53 +74,11 @@ friendsHash friendsGetHash(friendsData *d)
   return d->hash;
 }
 
-const friendsVariableData *friendsGetVariable(friendsData *d)
-{
-  if (!d) return NULL;
-  if (friendsGetType(d) != friendsVariable) return NULL;
-
-  return (friendsVariableData *)d->data;
-}
-
 const friendsChar *friendsDataToText(friendsData *d)
 {
   if (!d) return NULL;
 
   return d->txt;
-}
-
-friendsData *friendsSetVariable(friendsData *data, const friendsChar *text,
-                                int offset, friendsError *e)
-{
-  friendsAssert(data);
-  friendsAssert(data->park);
-  friendsAssert(text);
-  friendsAssert(offset >= 0);
-
-  if (data->type != friendsInvalidType) {
-    friendsSetError(e, ValidType);
-    return NULL;
-  }
-
-  if (data->data) {
-    friendsSetError(e, INVAL);
-    return NULL;
-  }
-
-  friendsVariableData *d;
-  d = friendsMalloc(sizeof(friendsVariableData), e);
-  if (!d) {
-    return NULL;
-  }
-
-  d->text = text;
-  d->offset = offset;
-
-  data->data = d;
-  data->type = friendsVariable;
-  data->hash = friendsHashString(text, NULL);
-
-  return data;
 }
 
 static friendsHash friendsTopNbit(friendsHash h, unsigned int n)

@@ -92,6 +92,7 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
 
   dest->data = d;
   dest->deleter = friendsPropositionDeleter;
+  dest->hash = friendsHashString(verb, NULL);
   dest->txt = verb;
   dest->txt_deleter = NULL;
 }

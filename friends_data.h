@@ -58,33 +58,6 @@ friendsHash friendsGetHash(friendsData *d);
 const friendsChar *friendsDataToText(friendsData *d);
 
 /**
- * @brief データに入っている命題のデータを返すのです。
- * @param d データをよこすのです。
- * @return 命題データを返すのです。種類が違っている時は NULL を返すのです。
- */
-const friendsPropositionData *friendsGetProposition(friendsData *d);
-
-/**
- * @brief データに入っている変数データを返すのです。
- * @param d データをよこすのです。
- * @return 変数データを返すのです。種類が違っている時はNULLを返すのです。
- */
-const friendsVariableData *friendsGetVariable(friendsData *d);
-
-/**
- * @brief 変数を設定するです。
- * @param dest 設定先のデータをよこすのです。
- * @param t    設定する文字列をよこすのです。
- * @param offset 連番の差分、すなわち、「〜の次」を使った回数をよこすのです。
- * @param e    NULL でない値をよこしたなら、そこにエラーの情報を書き込むのです。
- * @return よこしたデータを返すのです。
- *
- * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に捨てられるのです。
- */
-friendsData *friendsSetVariable(friendsData *dest, const friendsChar *t,
-                                int offset, friendsError *e);
-
-/**
  * @brief 数値をハッシュするのです。
  * @param a ハッシュする値をよこすのです。
  * @return ハッシュした値を返すのです。

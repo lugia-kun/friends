@@ -54,7 +54,7 @@ struct friendsAtomDataT {
 };
 
 struct friendsVariableDataT {
-  const friendsChar *text;   /*!< 変数名 */
+  friendsChar *text;         /*!< 変数名 */
   int offset;                /*!< 差異（「〜の次」を使用した回数） */
 };
 
@@ -71,7 +71,7 @@ struct friendsPropositionDataT
   friendsBool  stop;           /*!< たーのしー！ */
 };
 
-struct friendsVariableMatchT
+struct friendsMatchDataT
 {
   friendsPark *park;           /*!< 所属するパーク */
   friendsData *friend;
@@ -107,6 +107,7 @@ struct friendsParserT
   const friendsChar *cmark;
   const friendsChar *limit;
   const friendsChar *token;
+  const friendsChar *stoken;
   friendsLineColumn curpos;
   friendsLineColumn tokpos;
   friendsFillFunc *fill;

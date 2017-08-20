@@ -7,6 +7,8 @@
 #include "friends_set.h"
 #include "friends_error.h"
 #include "friends_list.h"
+#include "friends_data.h"
+#include "friends_atom.h"
 
 friendsPark *friendsNewPark(friendsError *e)
 {
@@ -129,4 +131,70 @@ void friendsDeletePointer(friendsPark *park, void *p)
 
   friendsListRemove(l);
   free(m);
+}
+
+friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
+                                 friendsError *e)
+{
+  friendsError ex;
+  friendsDataSet *set;
+  friendsType t;
+  const friendsChar *ch;
+  friendsDataList *ll;
+  const friendsAtomData *at;
+  int n;
+
+  friendsAssert(park);
+  friendsAssert(d);
+
+  friendsAssert(friendsGetPark(d) == park);
+
+  if (!e) {
+    ex = friendsNoError;
+    e = &ex;
+  }
+
+  t = friendsGetType(d);
+  ch = friendsDataToText(d);
+
+  switch(t) {
+  case friendsAtom:
+    set = park->atoms;
+    if (!ch) {
+      at = friendsGetAtom(d);
+      n = friendsGetAtomNumber(at, e);
+      if (friendsAnyError(*e)) {
+        return friendsFalse;
+      }
+      ll = friendsSetFindNumericAtom(set, n);
+    } else {
+      ll = friendsSetFindText(set, t, ch);
+    }
+    /* このアトムはすでに登録されている。 */
+    if (ll && friendsListSize(ll) > 0) return friendsTrue;
+    break;
+  case friendsProposition:
+    set = park->friends;
+    break;
+  default:
+    friendsSetError(e, InvalidType);
+    return friendsFalse;
+  }
+
+  friendsSetInsert(set, d, e);
+  if (friendsAnyError(*e)) {
+    return friendsFalse;
+  }
+
+  return friendsTrue;
+}
+
+
+friendsDataList *friendsPropositionListInPark(friendsPark *park,
+                                              const friendsChar *verb)
+{
+  friendsAssert(park);
+  friendsAssert(verb);
+
+  return friendsSetFindText(park->friends, friendsProposition, verb);
 }

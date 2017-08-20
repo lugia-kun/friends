@@ -63,4 +63,25 @@ void *friendsAddPointer(friendsPark *park, void *p,
  */
 void friendsDeletePointer(friendsPark *park, void *p);
 
+/**
+ * @brief データをパークに登録するのです。
+ * @param park パークをよこすのです。
+ * @param d 登録するデータをよこすのです。
+ * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @return 成功なら、friendsTrue を、失敗なら friendsFalse を返すのです。
+ *
+ * この関数はアミメキリンさんの知識に追加する関数なのです。
+ * 追加できるデータは、アトムか命題のどちらかなのです。
+ */
+friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
+                                 friendsError *e);
+
+/**
+ * @brief パークに登録されている命題データの中から、指定した述語の命題を集めてくるのです。
+ * @param park パークをよこすのです。
+ * @param verb 述語をよこすのです。
+ */
+friendsDataList *friendsPropositionListInPark(friendsPark *park,
+                                              const friendsChar *verb);
+
 #endif

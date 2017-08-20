@@ -22,7 +22,7 @@ struct friendsAtomDataT;
 struct friendsVariableDataT;
 struct friendsArgumentT;
 struct friendsPropositionDataT;
-struct friendsVariableMatchT;
+struct friendsMatchDataT;
 
 struct friendsDataListT;
 struct friendsDataSetT;
@@ -37,7 +37,7 @@ typedef struct friendsAtomDataT        friendsAtomData;
 typedef struct friendsVariableDataT    friendsVariableData;
 typedef struct friendsArgumentDataT    friendsArgumentData;
 typedef struct friendsPropositionDataT friendsPropositionData;
-typedef struct friendsVariableMatchT   friendsVariableMatch;
+typedef struct friendsMatchDataT       friendsMatchData;
 typedef struct friendsParserT          friendsParser;
 typedef struct friendsLineColumnT      friendsLineColumn;
 typedef struct friendsDataListT        friendsDataList;
