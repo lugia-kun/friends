@@ -28,18 +28,15 @@ friend_define ::= WAAI conditionals friend_part NANDANE TANOSHI.
 friend_ask ::= friend_part NANDAKKE.
 friend_ask ::= conditionals friend_part NANDAKKE.
 
-friend_part ::= list FRIEND_NAME FRIEND.
+friend_part ::= list PARTICLE FRIEND_NAME FRIEND.
+friend_part ::= list TOKA PARTICLE FRIEND_NAME FRIEND.
 
 conditionals ::= conditionals friend_part THEN.
 conditionals ::= friend_part THEN.
 
-list ::= list atom_or_variable_or_list PARTICLE.
-list ::= atom_or_variable_or_list PARTICLE.
+list ::= list PARTICLE atom_or_variable.
+list ::= atom_or_variable.
 
 atom_or_variable ::= ATOM.
 atom_or_variable ::= VARIABLE.
 atom_or_variable ::= atom_or_variable NO TSUGI.
-
-atom_or_variable_or_list ::= atom_or_variable.
-atom_or_variable_or_list ::= atom_or_variable_or_list TO atom_or_variable.
-atom_or_variable_or_list ::= atom_or_variable_or_list TOKA.

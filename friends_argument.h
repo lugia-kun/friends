@@ -19,9 +19,10 @@ const friendsArgumentData *friendsGetArgument(friendsData *d);
  * @param d 引数のデータ（アトム、変数、もしくはそれらのリスト）をよこすのです。
  * @param particle 助詞の文字列をよこすのです。
  * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @return 正しく設定できたら `dest` を失敗したら NULL を返すのです。
  */
-void friendsSetArgument(friendsData *dest, friendsData *d,
-                        friendsChar *particle, friendsError *err);
+friendsData *friendsSetArgument(friendsData *dest, friendsData *d,
+                                friendsChar *particle, friendsError *err);
 
 /**
  * @brief 引数データから助詞を得るのです。

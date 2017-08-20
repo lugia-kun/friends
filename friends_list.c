@@ -321,21 +321,17 @@ void friendsListRemoveAt(friendsDataList *l,
   friendsListRemove(l);
 }
 
-void friendsSetList(friendsData *dest, friendsDataList *l, friendsError *err)
+friendsData *friendsSetList(friendsData *dest, friendsDataList *l,
+                            friendsError *err)
 {
   friendsAssert(dest);
   friendsAssert(l);
 
-  if (friendsGetType(dest) != friendsInvalidType) {
-    friendsSetError(err, ValidType);
-    return;
-  }
-
   l = friendsListParent(l);
 
-  dest->data = l;
-  dest->type = friendsList;
-  dest->deleter = (friendsPointerDeleter *)friendsDeleteList;
+  return friendsSetData(dest, friendsList, l,
+                        (friendsPointerDeleter *)friendsDeleteList,
+                        NULL, NULL, NULL, 0, friendsFalse, err);
 }
 
 friendsDataList *friendsGetList(friendsData *d)

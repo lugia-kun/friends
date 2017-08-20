@@ -7,6 +7,7 @@
 #include "friends_data.h"
 #include "friends_core.h"
 #include "friends_error.h"
+#include "friends_string.h"
 
 const friendsVariableData *friendsGetVariable(friendsData *d)
 {
@@ -27,24 +28,48 @@ static void friendsVariableDeleter(void *p)
   friendsFree(d);
 }
 
-friendsData *friendsSetVariable(friendsData *data, friendsChar *text,
-                                int offset, friendsError *e)
+static friendsDataCompareResult friendsVariableCompare(const void *a,
+                                                       const void *b)
 {
-  friendsAssert(data);
-  friendsAssert(text);
-  friendsAssert(offset >= 0);
+  const friendsVariableData *va, *vb;
+  int r;
 
-  if (data->type != friendsInvalidType) {
-    friendsSetError(e, ValidType);
-    return NULL;
+  if (a == b) return friendsDataEqual;
+
+  va = (const friendsVariableData *)a;
+  vb = (const friendsVariableData *)b;
+
+  if (va->tail != vb->tail) {
+    return friendsDataNotEqual;
   }
 
-  if (data->data) {
-    friendsSetError(e, INVAL);
-    return NULL;
+  if (va->offset != vb->offset) {
+    return friendsDataNotEqual;
   }
 
+  r = friendsStringCompare(va->text, vb->text);
+  if (r == 0) {
+    return friendsDataEqual;
+  } else {
+    return friendsDataNotEqual;
+  }
+}
+
+
+friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
+                                int offset, friendsBool tail, friendsError *e)
+{
   friendsVariableData *d;
+
+  friendsAssert(dest);
+  friendsAssert(text);
+
+  if (tail == friendsTrue) {
+    friendsAssert(offset == 0);
+  } else {
+    friendsAssert(offset >= 0);
+  }
+
   d = friendsMalloc(sizeof(friendsVariableData), e);
   if (!d) {
     return NULL;
@@ -52,13 +77,16 @@ friendsData *friendsSetVariable(friendsData *data, friendsChar *text,
 
   d->text = text;
   d->offset = offset;
+  d->tail = tail;
 
-  data->data = d;
-  data->type = friendsVariable;
-  data->hash = friendsHashString(text, NULL);
-  data->deleter = friendsVariableDeleter;
+  if (!friendsSetData(dest, friendsVariable, d, friendsVariableDeleter,
+                      friendsVariableCompare, text, NULL,
+                      friendsHashString(text, NULL), friendsFalse, e)) {
+    free(d);
+    return NULL;
+  }
 
-  return data;
+  return dest;
 }
 
 const friendsChar *friendsVariableText(const friendsVariableData *d)

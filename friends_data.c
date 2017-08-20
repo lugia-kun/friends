@@ -74,11 +74,83 @@ friendsHash friendsGetHash(friendsData *d)
   return d->hash;
 }
 
+friendsData *friendsSetData(friendsData *dest, friendsType type,
+                            void *data, friendsPointerDeleter *data_deleter,
+                            friendsDataCompareFunc *comp_func,
+                            friendsChar *text,
+                            friendsPointerDeleter *text_deleter,
+                            friendsHash hash,
+                            friendsBool allow_replace,
+                            friendsError *err)
+{
+  friendsAssert(dest);
+  friendsAssert(dest->park);
+
+  if (type <= friendsInvalidType || type >= friendsLastType) {
+    friendsSetError(err, InvalidType);
+    return NULL;
+  }
+  if (dest->type != friendsInvalidType) {
+    if (allow_replace == friendsTrue && type != dest->type) {
+      friendsSetError(err, ValidType);
+      return NULL;
+    }
+    if (dest->data != data) {
+      if (dest->deleter) {
+        dest->deleter(dest->data);
+      }
+      if (dest->txt_deleter) {
+        dest->txt_deleter(dest->txt);
+      }
+    }
+  }
+
+  dest->type = type;
+  dest->data = data;
+  dest->deleter = data_deleter;
+  dest->comp_func = comp_func;
+  dest->hash = hash;
+  dest->txt = text;
+  dest->txt_deleter = text_deleter;
+
+  return dest;
+}
+
 const friendsChar *friendsDataToText(friendsData *d)
 {
   if (!d) return NULL;
 
   return d->txt;
+}
+
+friendsDataCompareResult friendsDataCompare(const friendsData *a,
+                                            const friendsData *b)
+{
+  friendsDataCompareResult t;
+  friendsDataCompareFunc *cfa;
+
+  t = 0;
+
+  if (a->park != b->park) {
+    t |= friendsDataInAnotherPark;
+  }
+
+  if (a->type != b->type) {
+    t |= friendsDataDifferentType;
+    return t;
+  }
+
+  cfa = a->comp_func;
+  if (!cfa) {
+    cfa = b->comp_func;
+    if (!cfa) {
+      t |= friendsDataNotComparable;
+      return t;
+    }
+  }
+
+  t |= cfa(a->data, b->data);
+  return t;
 }
 
 static friendsHash friendsTopNbit(friendsHash h, unsigned int n)

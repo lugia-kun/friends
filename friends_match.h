@@ -11,10 +11,8 @@
 
 friendsMatchData *friendsGetMatch(friendsData *data);
 
-void friendsSetMatch(friendsData *data, friendsMatchData *m);
+friendsData *friendsSetMatch(friendsData *dest, friendsMatchData *m,
+                             friendsError *err);
 
-friendsBool friendsMatch(friendsPark *park,
-                         friendsDataList **match_list,
-                         const friendsPropositionData *query);
 
 #endif /* FRIENDS_MATCH_H */

@@ -248,10 +248,12 @@ void friendsListRemoveAt(friendsDataList *l,
  * @param dest 設定先のデータをよこすのです。
  * @param l 設定するリストをよこすのです。
  * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @return 成功なら dest を、失敗なら NULL を返すのです。
  *
  * `l` は親でも子でも良いのです。ただし、実際に設定するデータは親になるのです。
  */
-void friendsSetList(friendsData *dest, friendsDataList *l, friendsError *err);
+friendsData *friendsSetList(friendsData *dest, friendsDataList *l,
+                            friendsError *err);
 
 /**
  * @brief データからリストを得るのです。

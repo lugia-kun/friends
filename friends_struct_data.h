@@ -39,10 +39,7 @@ struct friendsDataT
   friendsPointerDeleter *deleter;     /*!< データの削除関数 */
   friendsChar *txt;                   /*!< データの文字列情報 */
   friendsPointerDeleter *txt_deleter; /*!< テキストデータの削除関数 */
-};
-
-struct friendsConditionT {
-  friendsDataList *propositions; /*!< 命題のリスト */
+  friendsDataCompareFunc *comp_func;  /*!< データの比較関数 */
 };
 
 struct friendsAtomDataT {
@@ -56,6 +53,7 @@ struct friendsAtomDataT {
 struct friendsVariableDataT {
   friendsChar *text;         /*!< 変数名 */
   int offset;                /*!< 差異（「〜の次」を使用した回数） */
+  friendsBool tail;          /*!< 尾部リスト */
 };
 
 struct friendsArgumentDataT {

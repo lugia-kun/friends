@@ -143,6 +143,8 @@ typedef enum {
   friendsList,  /*!< リスト */
   friendsSet,   /*!< セット */
 
+  friendsMatch, /*!< 一致情報 */
+
   friendsLastType, /*!< 最後の型 */
 } friendsType;
 
@@ -152,12 +154,14 @@ typedef enum {
 typedef enum {
   friendsTextAtom,    /*!< 文字列 */
   friendsNumricAtom,  /*!< 数値 */
+
+  friendsLastAtomType, /*!< 最後の型 */
 } friendsAtomType;
 
 /**
  * @brief 真偽値を表すのです。
  *
- * できれば比較する時は列挙値と比較するのです。
+ * 比較する時は列挙値と比較するのです。
  */
 typedef enum {
   friendsFalse = 0,
@@ -316,9 +320,39 @@ typedef enum {
 } friendsErrorLevel;
 
 /**
+ * @brief フレンズのアトムとかの比較結果なのです。
+ *
+ * 「等しくない」がほしい場合は != friendsDataEqual で比較すると良いのです。
+ *
+ * `friendsDataNotEqual` は「比較はできるけど、大小は決められず等しく
+ * ない」を表すのです。対して、上記の「等しくない」は「比較できるかと
+ * か型があってるかとか違っているとかに関わらず、とにかく同じデータで
+ * はない」になるのです。
+ */
+typedef enum {
+  friendsDataEqual   = 0x01, /*!< a == b */
+  friendsDataGreater = 0x02, /*!< a >  b */
+  friendsDataLess    = 0x04, /*!< a <  b */
+  friendsDataNotComparable = 0x00, /*!< 比較できない */
+  friendsDataNotEqual = friendsDataGreater | friendsDataLess,
+  /*!< a != b */
+
+  friendsDataCompareSpecialsMask = 0x0f, /*!< 特殊な比較をマスクするための値 */
+  friendsDataDifferentType = 0x08, /*!< typeof(a) != typeof(b) */
+  friendsDataInAnotherPark = 0x10, /*!< park(a) != park(b) */
+
+  friendsDataLastCompareResult = 0xff,
+} friendsDataCompareResult;
+
+/**
  * @brief メモリを解放するための関数の形式なのです。
  */
 typedef void friendsPointerDeleter(void *);
+
+/**
+ * @brief データの比較関数の形式なのです。
+ */
+typedef friendsDataCompareResult friendsDataCompareFunc(const void *, const void *);
 
 /**
  * @brief 普通の文字を Friends の文字に変換するエンコーダ関数の形式なのです。

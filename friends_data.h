@@ -50,12 +50,54 @@ friendsType friendsGetType(friendsData *d);
 friendsHash friendsGetHash(friendsData *d);
 
 /**
+ * @brief データをセットするのです。
+ * @param dest 設定するデータをよこすのです。
+ * @param type データの種類をよこすのです。
+ * @param data 追加データをよこすのです。
+ * @param data_deleter データの削除関数をよこすのです。
+ * @param comp_func 比較関数をよこすのです。
+ * @param text データを表す文字列をよこすのです。
+ * @param text_deleter text を削除する関数をよこすのです。
+ * @param hash ハッシュ値をよこすのです。
+ * @param allow_replace 他の同じ型のデータを置き換えることを許可するのです。
+ * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @return 成功なら dest を、失敗なら NULL を返すのです。
+ *
+ * この関数は内部用なのです。
+ *
+ * 削除関数は自動削除して欲しくなければ NULL をよこすのです。
+ */
+friendsData *friendsSetData(friendsData *dest, friendsType type,
+                            void *data, friendsPointerDeleter *data_deleter,
+                            friendsDataCompareFunc *comp_func,
+                            friendsChar *text,
+                            friendsPointerDeleter *text_deleter,
+                            friendsHash hash,
+                            friendsBool allow_replace,
+                            friendsError *err);
+
+/**
  * @brief データに入っている文字列を得るのです。
  * @param d データをよこすのです。
  * @return データが、アトム，変数ならその文字を、命題なら述語の文字列を返すのです。
  *         それ以外の場合は NULL を返すのです。
  */
 const friendsChar *friendsDataToText(friendsData *d);
+
+/**
+ * @brief データ同士の比較を行うのです。
+ * @param a データをよこすのです。
+ * @param b データをよこすのです。
+ * @return 比較結果を返すのです。
+ *
+ * 結果は複合値を返すことがあるのです。例えば、
+ * 所属しているパークが違うけど、中身が同じなら
+ * `friendsDataInAnotherPark | friendsDataEqual` な値を返すのです。
+ *
+ * 通常の比較では `friendsDataEqual` とかの単体と比較すれば良いと思うのです。
+ */
+friendsDataCompareResult friendsDataCompare(const friendsData *a,
+                                            const friendsData *b);
 
 /**
  * @brief 数値をハッシュするのです。

@@ -151,7 +151,6 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       Dore   = H_Do H_Re;           // どれ
 
       No = H_No; // の
-      To = H_To; // と
       Toka = H_To H_Ka; // とか
       Tsugi = (H_Tu H_Gi | "\u6b21"); // つぎ | 次
 
@@ -168,7 +167,6 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       Tanoshi/(wss|nl)  { Parse(TANOSHI); continue; }
       Tsugi/(wss|nl)    { Parse(TSUGI); continue; }
       Friends/(wss|nl)  { Parse(FRIEND); continue; }
-      To/(wss|nl)       { Parse(TO); continue; }
       Toka/(wss|nl)     { Parse(TOKA); continue; }
 
       (Anata|Kimi|Kare|Kanojo|Dare|Nani|Are|Kore|Korera|

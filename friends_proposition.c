@@ -31,11 +31,11 @@ static void friendsPropositionDeleter(void *p)
   free(a);
 }
 
-void friendsSetProposition(friendsData *dest, friendsChar *verb,
-                           friendsDataList *arguments,
-                           friendsDataList *conditions,
-                           friendsBool stop,
-                           friendsError *err)
+friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
+                                   friendsDataList *arguments,
+                                   friendsDataList *conditions,
+                                   friendsBool stop,
+                                   friendsError *err)
 {
   friendsDataList *l;
   friendsPropositionData *d;
@@ -48,11 +48,11 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
 
   if (!arguments) {
     friendsSetError(err, NoArgument);
-    return;
+    return NULL;
   }
   if (friendsListSize(arguments) == 0) {
     friendsSetError(err, NoArgument);
-    return;
+    return NULL;
   }
 
   arguments = friendsListParent(arguments);
@@ -62,7 +62,7 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
     ad = friendsGetArgument(dd);
     if (!ad) {
       friendsSetError(err, InvalidType);
-      return;
+      return NULL;
     }
   }
 
@@ -74,7 +74,7 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
       pd = friendsGetProposition(dd);
       if (!pd) {
         friendsSetError(err, InvalidType);
-        return;
+        return NULL;
       }
     }
   }
@@ -82,7 +82,7 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
   d = (friendsPropositionData *)calloc(sizeof(friendsPropositionData), 1);
   if (!d) {
     friendsSetError(err, NOMEM);
-    return;
+    return NULL;
   }
 
   d->arguments = arguments;
@@ -90,11 +90,16 @@ void friendsSetProposition(friendsData *dest, friendsChar *verb,
   d->stop = stop;
   d->verb = verb;
 
-  dest->data = d;
-  dest->deleter = friendsPropositionDeleter;
-  dest->hash = friendsHashString(verb, NULL);
-  dest->txt = verb;
-  dest->txt_deleter = NULL;
+  dd = friendsSetData(dest, friendsProposition, d,
+                      friendsPropositionDeleter,
+                      NULL, verb, NULL,
+                      friendsHashString(verb, NULL),
+                      friendsFalse, err);
+  if (!dd) {
+    free(d);
+    return NULL;
+  }
+  return dd;
 }
 
 friendsDataList *friendsPropositionArguments(const friendsPropositionData *p)

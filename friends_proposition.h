@@ -24,19 +24,20 @@ const friendsPropositionData *friendsGetProposition(friendsData *d);
  * @param condition 条件のリストをよこすのです。
  * @param stop 検索する時に、この文で止めるなら、friendsTrue をよこすのです。
  * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @return 成功した時は dest、失敗した時は NULL を返すのです。
  *
- * 引数のリストは、引数データ (`friendsArgumentData`) のリスト、
- * 条件のリストは、命題データ (`friendsPropositionData`) のリストをよこすのです。
+ * 引数のリストは、引数データ (`friendsArgument`) のリスト、
+ * 条件のリストは、命題データ (`friendsProposition`) のリストをよこすのです。
  * 他のデータが混ざっているとエラーにするのです。
  *
  * 設定するリストと文字列はこのデータが削除される時に、削除するのです。
  * （リスト内のデータは削除されないのです）
  */
-void friendsSetProposition(friendsData *dest, friendsChar *verb,
-                           friendsDataList *arguments,
-                           friendsDataList *conditions,
-                           friendsBool stop,
-                           friendsError *err);
+friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
+                                   friendsDataList *arguments,
+                                   friendsDataList *conditions,
+                                   friendsBool stop,
+                                   friendsError *err);
 
 /**
  * @brief 引数リストを得るのです。

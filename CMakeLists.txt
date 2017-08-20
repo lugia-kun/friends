@@ -112,11 +112,10 @@ add_subdirectory(enc)
 
 set(FRIENDS_C_SOURCES
   friends_core.c
-  friends_list.c friends_set.c
-  friends_io.c friends_error.c
+  friends_list.c friends_set.c friends_io.c friends_error.c
   friends_park.c friends_data.c friends_variable.c
   friends_atom.c friends_argument.c friends_etcetra.c
-  friends_proposition.c
+  friends_proposition.c friends_match.c
   friends_global.c)
 set(FRIENDS_LEMON_SOURCES friends_parser.lem)
 set(FRIENDS_RE2C_SOURCES  friends_lexer.re friends_string.re

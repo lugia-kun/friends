@@ -19,15 +19,16 @@ const friendsVariableData *friendsGetVariable(friendsData *d);
 /**
  * @brief 変数を設定するです。
  * @param dest 設定先のデータをよこすのです。
- * @param t    設定する文字列をよこすのです。
+ * @param text 設定する文字列をよこすのです。
  * @param offset 連番の差分、すなわち、「〜の次」を使った回数をよこすのです。
+ * @param tail 後続を省略する時、friendsTrue をよこすのです。
  * @param e    NULL でない値をよこしたなら、そこにエラーの情報を書き込むのです。
  * @return よこしたデータを返すのです。
  *
  * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に捨てられるのです。
  */
-friendsData *friendsSetVariable(friendsData *dest, friendsChar *t,
-                                int offset, friendsError *e);
+friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
+                                int offset, friendsBool tail, friendsError *e);
 
 /**
  * @brief 変数の文字列を得るのです。
