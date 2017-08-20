@@ -322,7 +322,7 @@ void friendsAssertImplement(const char *conditional, const char *fname,
   do {
     volatile char *p = NULL;
     *p = 1;
-  } while(0)
+  } while(0);
 #endif
 #endif
 

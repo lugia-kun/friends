@@ -133,6 +133,7 @@ int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
   friendsAssert(output);
   friendsAssert(input);
 
+  tmp = NULL;
   n = 0;
   for (step = 0; step < 2; ++step) {
     int i;

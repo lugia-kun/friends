@@ -23,9 +23,9 @@
  * 化を行うのです。
  */
 #ifdef __GNUC__
-#define friendsExpect(cond, var) __builtin_expect(!!(cond), (var))
+#define friendsExpect(cond, var) (__builtin_expect((cond), (var)) == (var))
 #else
-#define friendsExpect(cond, var) ((!!(cond)) == (var))
+#define friendsExpect(cond, var) ((cond) == (var))
 #endif
 
 /**
@@ -100,7 +100,7 @@ void friendsUnreachableImplement(const char *fname,
 #else
 #define friendsAssert(cond)                              \
   do {                                                   \
-    if (!friendsExpect((cond), 0))                       \
+    if (friendsExpect(!!(cond), 0))                       \
       friendsAssertImplement(#cond, FRIENDS_SOURCE_FILE, \
                              __LINE__, __func__);        \
   } while(0)
