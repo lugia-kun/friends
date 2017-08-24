@@ -31,7 +31,9 @@ friendsDataCompareResult friendsAtomCompare(const friendsAtomData *a,
   if (!a || !b) return friendsDataNotEqual;
   if (a->type != b->type) return friendsDataDifferentType;
 
-  if (a->type == friendsTextAtom) {
+  if (a->type == friendsNextAtom) {
+    return friendsDataEqual;
+  } else if (a->type == friendsTextAtom) {
     r = friendsStringCompare(a->data.t, b->data.t);
     if (r == 0) {
       return friendsDataEqual;
@@ -84,7 +86,7 @@ friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e)
   }
 
   d->data.n = a;
-  d->type = friendsNumricAtom;
+  d->type = friendsNumericAtom;
 
   if (!friendsSetData(dest, friendsAtom, d, friendsAtomDeleter,
                       friendsAtomCompareV, NULL, NULL,
@@ -124,11 +126,51 @@ friendsData *friendsSetTextAtom(friendsData *dest, friendsChar *text,
   return dest;
 }
 
+friendsData *friendsSetNextAtom(friendsData *dest, friendsError *e)
+{
+  friendsChar *ch;
+  friendsAtomData *d;
+  int r;
+
+  friendsAssert(dest);
+
+  d = friendsMalloc(sizeof(friendsAtomData), e);
+  if (!d) {
+    return NULL;
+  }
+
+  r = friendsUnescapeStringLiteral(&ch, "\\u6b21" /* 次 */, e);
+  if (r < 0) {
+    free(d);
+    return NULL;
+  }
+
+  d->data.t = NULL;
+  d->type = friendsNextAtom;
+
+  if (!friendsSetData(dest, friendsAtom, d, friendsAtomDeleter,
+                      friendsAtomCompareV, ch, free,
+                      friendsHashValueNextAtom, friendsFalse, e)) {
+    free(d);
+    free(ch);
+    return NULL;
+  }
+
+  return dest;
+}
+
+friendsAtomType friendsGetAtomType(const friendsAtomData *a)
+{
+  friendsAssert(a);
+
+  return a->type;
+}
+
 int friendsGetAtomNumber(const friendsAtomData *a, friendsError *e)
 {
   friendsAssert(a);
 
-  if (a->type != friendsNumricAtom) {
+  if (a->type != friendsNumericAtom) {
     friendsSetError(e, InvalidType);
     return -1;
   }

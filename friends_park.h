@@ -11,8 +11,9 @@
 
 /**
  * @brief 新しいパークを作るのです。
- * @param e NULL ではない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
- * @return 新しいパークの場所を返すのです。失敗した時は、NULL を返すのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 新しいパークの場所を返すのです。失敗した時は、NULL を返すの
+ *         です。
  *
  * 記憶できるスペースが無い時は、`e` に NOMEM を設定するです。
  */
@@ -46,9 +47,10 @@ friendsBool friendsParkIsDeleting(friendsPark *park);
  * @brief ポインタをパークの管理下に置くのです。
  * @param park パークをよこすのです。
  * @param p 管理させるポインタをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
  * @param deleter ポインタを捨てるときに使う関数をよこすのです。
- * @return 追加したポインタを返すのです。失敗した時は NULL を返すのです。
+ * @return 追加したポインタを返すのです。失敗した時は NULL を返すので
+ *         す。
  */
 void *friendsAddPointer(friendsPark *park, void *p,
                         friendsPointerDeleter *deleter,
@@ -77,11 +79,57 @@ friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
                                  friendsError *e);
 
 /**
- * @brief パークに登録されている命題データの中から、指定した述語の命題を集めてくるのです。
+ * @brief パークに登録されている命題データの中から、指定した述語の命題
+ *        を集めてくるのです。
  * @param park パークをよこすのです。
  * @param verb 述語をよこすのです。
+ * @return 集めた命題のリストを返すのです。存在しない時は、NULL を返すのです。
  */
 friendsDataList *friendsPropositionListInPark(friendsPark *park,
                                               const friendsChar *verb);
+
+/**
+ * @brief フレンズ言語を解読する装置を得るのです。
+ * @param park パークをよこすのです。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 解読装置を返すのです。作成に失敗した時は、NULL を返すのです。
+ *
+ * パークの中になかったら、新しく作るのです。
+ *
+ * 返したポインタは、friendsDeletePark か friendsResetParser を呼び出
+ * すまで使えるのです。
+ *
+ * フレンズ言語の解読の仕方を説明するのです。
+ *
+ * 1. まず、この関数を使ってパークにある解読装置を得るのです。
+ *
+ * 2. 適当な長さの文字列を読み込んで、friendsAppendParseText 関数で解
+ *    読装置にセットするのです。
+ *
+ * 3. 解読装置を friendsLexer 関数に渡すのです。friendsLexer 関数は、
+ *    その文字列を単語に区切って解読装置に設定するのです。
+ *
+ * 4. 解読装置を friendsParse 関数に渡すと分解した単語の組み合わせから、
+ *    情報を得るのです。
+ *
+ * * エラーの時は、friendsResetParser 関数でリセットできるのです。こ
+ *   の時、読みかけの情報は捨てられてしまうのです。リセットした後は、
+ *   1. からやり直すのです。
+ *
+ * * 3. で、「続きが必要」と言われたときも、4. は実行しておくと良いのです。
+ */
+friendsParser *friendsGetParser(friendsPark *park, friendsError *err);
+
+/**
+ * @brief フレンズ言語を解読する装置を作り直すのです。
+ * @param park パークをよこすのです。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 新しい解読装置を返すのです。作成に失敗した時とパーク内に無
+ *         い時は、NULL を返すのです。
+ *
+ * 返したポインタは、friendsDeletePark か friendsResetParser を呼び出
+ * すまで使えるのです。
+ */
+friendsParser *friendsResetParser(friendsPark *park, friendsError *err);
 
 #endif

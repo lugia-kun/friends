@@ -16,9 +16,10 @@ const friendsArgumentData *friendsGetArgument(friendsData *d);
 /**
  * @brief 引数データを設定するのです。
  * @param dest 設定先のデータをよこすのです。
- * @param d 引数のデータ（アトム、変数、もしくはそれらのリスト）をよこすのです。
+ * @param d 引数のデータ（アトム、変数、もしくはそれらのリスト）をよこ
+ *          すのです。
  * @param particle 助詞の文字列をよこすのです。
- * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return 正しく設定できたら `dest` を失敗したら NULL を返すのです。
  */
 friendsData *friendsSetArgument(friendsData *dest, friendsData *d,

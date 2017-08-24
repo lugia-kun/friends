@@ -12,8 +12,9 @@
 /**
  * @brief 新しいデータを作るのです。
  * @param park パークをよこすのです。
- * @param e NULL ではない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
- * @return 新しいデータの場所を返すのです。失敗した時は、NULL を返すのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 新しいデータの場所を返すのです。失敗した時は、NULL を返すの
+ *         です。
  *
  * `park` が NULL の時は、`e` に INVAL を設定するです。
  * 記憶できるスペースが無い時は、`e` に NOMEM を設定するです。
@@ -29,14 +30,16 @@ void friendsDeleteData(friendsData *d);
 /**
  * @brief データから所属するパークを得るのです。
  * @param d データをよこすのです。
- * @return パークを返すのです。d が NULL なら、我々も NULL を返すのです。
+ * @return パークを返すのです。d が NULL なら、我々も NULL を返すので
+ *         す。
  */
 friendsPark *friendsGetPark(friendsData *d);
 
 /**
  * @brief データの種類を得るのです。
  * @param d データをよこすのです。
- * @return データの種類を返すのです。d が NULL なら、我々は friendsInvalidType を返すのです。
+ * @return データの種類を返すのです。d が NULL なら、我々は
+ *         friendsInvalidType を返すのです。
  */
 friendsType friendsGetType(friendsData *d);
 
@@ -59,8 +62,9 @@ friendsHash friendsGetHash(friendsData *d);
  * @param text データを表す文字列をよこすのです。
  * @param text_deleter text を削除する関数をよこすのです。
  * @param hash ハッシュ値をよこすのです。
- * @param allow_replace 他の同じ型のデータを置き換えることを許可するのです。
- * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param allow_replace 他の同じ型のデータを置き換えることを許可するの
+ *        です。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return 成功なら dest を、失敗なら NULL を返すのです。
  *
  * この関数は内部用なのです。
@@ -79,8 +83,8 @@ friendsData *friendsSetData(friendsData *dest, friendsType type,
 /**
  * @brief データに入っている文字列を得るのです。
  * @param d データをよこすのです。
- * @return データが、アトム，変数ならその文字を、命題なら述語の文字列を返すのです。
- *         それ以外の場合は NULL を返すのです。
+ * @return データが、アトム，変数ならその文字を、命題なら述語の文字列
+ *         を返すのです。それ以外の場合はたぶん NULL を返すのです。
  */
 const friendsChar *friendsDataToText(friendsData *d);
 
@@ -90,11 +94,12 @@ const friendsChar *friendsDataToText(friendsData *d);
  * @param b データをよこすのです。
  * @return 比較結果を返すのです。
  *
- * 結果は複合値を返すことがあるのです。例えば、
- * 所属しているパークが違うけど、中身が同じなら
- * `friendsDataInAnotherPark | friendsDataEqual` な値を返すのです。
+ * 結果は複合値を返すことがあるのです。例えば、所属しているパークが違
+ * うけど、中身が同じなら `friendsDataInAnotherPark |
+ * friendsDataEqual` な値を返すのです。
  *
- * 通常の比較では `friendsDataEqual` とかの単体と比較すれば良いと思うのです。
+ * 通常の比較では `friendsDataEqual` とかの単体と比較すれば良いと思う
+ * のです。
  */
 friendsDataCompareResult friendsDataCompare(const friendsData *a,
                                             const friendsData *b);
@@ -106,15 +111,14 @@ friendsDataCompareResult friendsDataCompare(const friendsData *a,
  *
  * ハッシュ値は、上位 2 ビットが 00 なら数値、上位 2 ビットが 01 なら
  * バイナリデータ、最上位ビットが 1 なら文字列にしているです。でも、こ
- * のルールは型の判別に使ってはいけないのです。
- * そして、ハッシュ値はファイルに保存しないほうが良いのです。
+ * のルールは型の判別に使ってはいけないのです。そして、ハッシュ値はファ
+ * イルに保存しないほうが良いのです。
  *
  * 数値のハッシュ値は最上位 4 ビットが 0 なら値がそのままハッシュ値に
  * し、上位 4 ビットを 0001 にするのです。それ以外の場合は、文字列扱い
  * でハッシュされ、上位 3 ビットを 001 にするのです。
  *
  * 上位 4 ビットが 0000 になるハッシュは使われていないのです。
- * ハッシュ値 0 は無効なハッシュとして扱われるのです。
  */
 friendsHash friendsHashNumeral(int a);
 
@@ -128,8 +132,8 @@ friendsHash friendsHashNumeral(int a);
  * でも、文字列のデータをそのまま使うので、UTF-8 モードのハッシュ値と
  * UTF-16 モードのハッシュ値は異なる値になるのです。
  *
- * `e` を指定している時、`e` の指している場所は含まないのです。NULL のときは、
- * NUL 文字までを調べるのです。
+ * `e` を指定している時、`e` の指している場所は含まないのです。NULL の
+ * ときは、NUL 文字までを調べるのです。
  */
 friendsHash friendsHashString(const friendsChar *s, const friendsChar *e);
 
@@ -142,5 +146,26 @@ friendsHash friendsHashString(const friendsChar *s, const friendsChar *e);
  * `e` の指している場所は含まないのです。
  */
 friendsHash friendsHashBinary(const void *s, const void *e);
+
+/**
+ * @brief 比較結果が等しいか調べるのです。
+ * @param x 比較結果をよこすのです。
+ * @return 等しければ 1 を返すのです。等しくなければ 0 を返すのです。
+ */
+int friendsDataCompareIsEqual(friendsDataCompareResult x);
+
+/**
+ * @brief 比較結果が等しくないか調べるのです。
+ * @param x 比較結果をよこすのです。
+ * @return 等しくなければ 1 を返すのです。等しければ 0 を返すのです。
+ */
+int friendsDataCompareIsNotEqual(friendsDataCompareResult x);
+
+/**
+ * @brief 比較結果が Set 用の比較で等しいか調べるのです。
+ * @param x 比較結果をよこすのです。
+ * @return 等しければ 1 を返すのです。等しくなければ 0 を返すのです。
+ */
+int friendsDataCompareIsSetEqual(friendsDataCompareResult x);
 
 #endif /* FRIENDS_DATA_H */

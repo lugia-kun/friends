@@ -21,7 +21,7 @@ enum {
 
 friendsDataSetHash friendsSmallHash(friendsHash h)
 {
-  friendsDataSetHash o = 0xc6;
+  friendsDataSetHash o = 0x00;
   int i;
   enum {
     ASIZE = ((sizeof(friendsHash) - 1) / sizeof(friendsDataSetHash) + 1)

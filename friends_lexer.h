@@ -13,9 +13,10 @@
  * @brief Friends 言語を読むのです。
  * @param park パークをよこすのです。
  * @param str 読む文字列をよこすのです。
- * @param fillFunc 文字列をよこさない (NULL) なら、代わりに続きを読むための関数をよこすのです。
+ * @param fillFunc 文字列をよこさない (NULL) なら、代わりに続きを読む
+ *        ための関数をよこすのです。
  * @param fillarg  fillFunc に渡せるデータを一つよこすのです。
- * @param err NULL ではない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
  *
  * `str` が `NULL` ではないなら、我々は `fillFunc` を無視するです。
  *

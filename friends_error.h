@@ -32,9 +32,12 @@
  * @brief エラーメッセージを表示するのです。
  * @param elvl エラーの程度をよこすのです。
  * @param filename 必要なら、エラーが起きたファイル名をよこすのです。
- * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param format メッセージを `friendsAsprintCV` に渡す形式でよこすのです。
+ * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は
+ *        0 以下をよこすのです。
+ * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時
+ *        は 0 以下をよこすのです。
+ * @param format メッセージを `friendsAsprintCV` に渡す形式でよこすの
+ *        です。
  *
  * この関数の処理中にエラーが起きた時は、その内容を我々にはよくわから
  * ない言葉で出力するのです。
@@ -47,9 +50,12 @@ void friendsPrintErrorF(friendsErrorLevel elvl,
  * @brief エラーメッセージを表示するのです。
  * @param elvl エラーの程度をよこすのです。
  * @param filename 必要なら、エラーが起きたファイル名をよこすのです。
- * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param format メッセージを `friendsAsprintCV` に渡す形式でよこすのです。
+ * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は
+ *        0 以下をよこすのです。
+ * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時
+ *        は 0 以下をよこすのです。
+ * @param format メッセージを `friendsAsprintCV` に渡す形式でよこすの
+ *        です。
  *
  * この関数の処理中にエラーが起きた時は、その内容を我々にはよくわから
  * ない言葉で出力するのです。
@@ -62,9 +68,12 @@ void friendsPrintErrorV(friendsErrorLevel elvl,
  * @brief エラーメッセージを表示するのです。
  * @param elvl エラーの程度をよこすのです。
  * @param filename 必要なら、エラーが起きたファイル名をよこすのです。
- * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時は 0 以下をよこすのです。
- * @param ainfo メッセージを `friendsAsprintV` に渡す形式でよこすのです。
+ * @param line 必要ならエラーが起きた行番号をよこすのです。不要な時は
+ *        0 以下をよこすのです。
+ * @param column 必要ならエラーが起きた列番号をよこすのです。不要な時
+ *        は 0 以下をよこすのです。
+ * @param ainfo メッセージを `friendsAsprintV` に渡す形式でよこすので
+ *        す。
  *
  * この関数の処理中にエラーが起きた時は、その内容を我々にはよくわから
  * ない言葉で出力するのです。
@@ -77,7 +86,8 @@ void friendsPrintError(friendsErrorLevel elvl,
  * @brief エラーメッセージを表す文字列を作るのです。
  * @param buf メモリを確保して文字列を作る場所をよこすのです。
  * @param ecnv 変換するエラーの値をよこすのです。
- * @return 書き込んだ配列要素数を返すのです。エラーの時は -1 を返すのです。
+ * @return 書き込んだ配列要素数を返すのです。エラーの時は -1 を返すの
+ *         です。
  */
 int friendsErrorString(friendsChar **buf, friendsError ecnv);
 
@@ -90,7 +100,8 @@ void friendsUnreachableImplement(const char *fname,
  * @macro friendsAssert
  * @param cond 条件式をよこすのです。
  *
- * 指定した条件を満たしていなかったら、エラーを表示して終了させるのです。
+ * 指定した条件を満たしていなかったら、エラーを表示して終了させるので
+ * す。
  *
  * このマクロは、デバッグ用なのです。デバッグモードでない時は、条件式
  * を満たしていなくても何もおきないのです。

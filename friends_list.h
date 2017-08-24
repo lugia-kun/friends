@@ -8,12 +8,12 @@
  * `friendsNewList` 関数はこれを返すのです。
  *
  * 2つ目は、リストのデータを保持する子なのです。
- * `friendsListNext`/`friendsListPrev` 関数などで使われるのです。
- * データの設定は子にしかできないのです。
+ * `friendsListNext`/`friendsListPrev` 関数などで使われるのです。デー
+ * タの設定は子にしかできないのです。
  *
- * ちなみに、リストのデータは単なるポインタでしかなくて、リストの操作自体には、
- * `friendsData` のデータを利用することは無いので、ある種の合意が取れれば
- * 別のデータを入れても安全なのです。
+ * ちなみに、リストのデータは単なるポインタでしかなくて、リストの操作
+ * 自体には、`friendsData` のデータを利用することは無いので、ある種の
+ * 合意が取れれば別のデータを入れても安全なのです。
  */
 /* -*- mode: c -*- */
 /* vim: set ft=c: */
@@ -25,7 +25,7 @@
 
 /**
  * @brief 新しいリストを作るのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を保存するのです。
+ * @param e NULL でなければ、そこにエラーの情報を保存するのです。
  * @return 確保したリストのポインタを渡すのです。
  */
 friendsDataList *friendsNewList(friendsError *e);
@@ -87,7 +87,8 @@ void friendsSetListData(friendsDataList *l, friendsData *d);
 /**
  * @brief 要素が先頭かどうかを判定すのるです。
  * @param l 検証する要素をよこすのです。
- * @return 先頭なら、`friendsTrue`、それ以外なら `friendsFalse` を返すのです。
+ * @return 先頭なら、`friendsTrue`、それ以外なら `friendsFalse` を返す
+ *         のです。
  *
  * `l` が親の場合は `friendsFalse` を返すのです。
  */
@@ -96,7 +97,8 @@ friendsBool friendsListIsBegin(friendsDataList *l);
 /**
  * @brief 要素が末尾かどうかを判定するのです。
  * @param l 検証する要素をよこすのです。
- * @return 末尾なら、`friendsTrue`、それ以外なら `friendsFalse` を返すのです。
+ * @return 末尾なら、`friendsTrue`、それ以外なら `friendsFalse` を返す
+ *         のです。
  *
  * `l` が親の場合は `friendsFalse` を返すのです。
  */
@@ -168,7 +170,8 @@ friendsDataList *friendsListFindIf(friendsDataList *l,
  * @param a 関数に渡す追加の引数を（あれば）よこすのです。
  * @return 見つかった場所の要素を返すのです。
  *
- * `l` は親でも子でも良いのです。親でも子でも、先頭からすべて処理するのです。
+ * `l` は親でも子でも良いのです。親でも子でも、先頭からすべて処理する
+ * のです。
  *
  * 処理関数から friendsFalse を返すと処理を中止 (break) できるのです。
  *
@@ -185,7 +188,8 @@ void friendsListEach(friendsDataList *l,
  * @param a 関数に渡す追加の引数を（あれば）よこすのです。
  * @return 見つかった場所の要素を返すのです。
  *
- * `l` は親でも子でも良いのです。親でも子でも、先頭からすべて処理するのです。
+ * `l` は親でも子でも良いのです。親でも子でも、先頭からすべて処理する
+ * のです。
  *
  * 処理関数から friendsFalse を返すと処理を中止 (break) できるのです。
  *
@@ -199,7 +203,7 @@ void friendsListEachItem(friendsDataList *l,
  * @brief データを挿入するのです。
  * @param l 挿入位置をよこすのです。
  * @param d 挿入するデータをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を保存するのです。
+ * @param e NULL でなければ、そこにエラーの情報を保存するのです。
  * @return 挿入した要素を返すのです。失敗した時は NULL を返すのです。
  *
  * `l` の前にデータを追加するのです。`l` が親の場合は先頭に追加するのです。
@@ -211,7 +215,7 @@ friendsDataList *friendsListInsert(friendsDataList *l,
  * @brief データを追加するのです。
  * @param l リストをよこすのです。
  * @param d 追加するデータをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を保存するのです。
+ * @param e NULL でなければ、そこにエラーの情報を保存するのです。
  * @return 追加した要素を返すのです。失敗した時は NULL を返すのです。
  *
  * この関数は必ず末尾に追加するのです。`l` は親でも子でも良いのです。
@@ -231,7 +235,7 @@ void friendsListRemove(friendsDataList *l);
  * @brief 指定された場所の要素を削除するのです。
  * @param l 要素の基準位置をよこすのです。
  * @param index 削除する場所を相対値でよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
  *
  * index が 0 なら、指定した要素を、正の値なら前方に、負の数なら後方に
  * カウントするのです。最後と最初は超えないのです。例えば 2 番目の要素
@@ -247,10 +251,11 @@ void friendsListRemoveAt(friendsDataList *l,
  * @brief データにリストを設定するのです。
  * @param dest 設定先のデータをよこすのです。
  * @param l 設定するリストをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return 成功なら dest を、失敗なら NULL を返すのです。
  *
- * `l` は親でも子でも良いのです。ただし、実際に設定するデータは親になるのです。
+ * `l` は親でも子でも良いのです。ただし、実際に設定するデータは親にな
+ * るのです。
  */
 friendsData *friendsSetList(friendsData *dest, friendsDataList *l,
                             friendsError *err);

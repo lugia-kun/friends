@@ -38,11 +38,6 @@ friendsData *friendsSetMatch(friendsData *dest, friendsMatchData *m,
   friendsAssert(dest);
   friendsAssert(m);
 
-  if (m->park != friendsGetPark(dest)) {
-    friendsSetError(err, INVAL);
-    return NULL;
-  }
-
   return friendsSetData(dest, friendsMatch, m, friendsMatchDeleter, NULL,
                         NULL, NULL, 0, friendsTrue, err);
 }

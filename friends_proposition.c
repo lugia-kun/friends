@@ -8,6 +8,7 @@
 #include "friends_list.h"
 #include "friends_error.h"
 #include "friends_argument.h"
+#include "friends_string.h"
 
 const friendsPropositionData *friendsGetProposition(friendsData *d)
 {
@@ -29,6 +30,99 @@ static void friendsPropositionDeleter(void *p)
   friendsDeleteList(a->conditions);
   free(a->verb);
   free(a);
+}
+
+static friendsDataCompareResult
+friendsPropositionListCompare(friendsDataList *la,
+                              friendsDataList *lb)
+{
+  friendsDataCompareResult t, u;
+  friendsData *da, *db;
+  friendsDataList *sla, *slb;
+
+  if (!la || !lb) { return friendsDataNotComparable; }
+
+  la = friendsListParent(la);
+  lb = friendsListParent(lb);
+  if (la == lb) { return friendsDataEqual; }
+  if (!la || !lb) { return friendsDataNotComparable; }
+
+  if (friendsListSize(la) != friendsListSize(lb)) {
+    return friendsDataNotEqual;
+  }
+
+  if (friendsListSize(la) == 0) {
+    return friendsDataEqual;
+  }
+
+  t = friendsDataEqual;
+  la = friendsListBegin(la);
+  lb = friendsListBegin(lb);
+  for (; la && lb; la = friendsListNext(la), lb = friendsListNext(lb)) {
+    da = friendsListData(la);
+    db = friendsListData(lb);
+    if (da == db) continue;
+    u = friendsDataCompare(da, db);
+    if (u == friendsDataDifferentType) { t = u; break; }
+    if (friendsDataCompareIsNotEqual(u)) {
+      if (friendsGetType(da) == friendsList) {
+        sla = friendsGetList(da);
+        slb = friendsGetList(db);
+        u = friendsPropositionListCompare(sla, slb);
+        if (friendsDataCompareIsNotEqual(u)) {
+          t = u;
+          break;
+        }
+      } else {
+        t = u;
+        break;
+      }
+    }
+  }
+  return t;
+}
+
+friendsDataCompareResult
+friendsPropositionCompare(const friendsPropositionData *a,
+                          const friendsPropositionData *b)
+{
+  friendsDataCompareResult ret, tmp;
+
+  if (!a || !b) return friendsDataNotComparable;
+  if (a == b) return friendsDataEqual;
+
+  ret = 0;
+  if (friendsStringCompare(a->verb, b->verb) == 0) {
+    ret = friendsDataSetEqual;
+  } else {
+    return friendsDataNotEqual;
+  }
+
+  tmp = friendsDataEqual;
+  if (a->arguments != b->arguments) {
+    tmp = friendsPropositionListCompare(a->arguments, b->arguments);
+  }
+
+  if (friendsDataCompareIsEqual(tmp)) {
+    if (a->conditions != b->conditions) {
+      tmp = friendsPropositionListCompare(a->conditions, b->conditions);
+    }
+  }
+
+  if (friendsDataCompareIsEqual(tmp)) {
+    return tmp;
+  } else {
+    return ret | tmp | friendsDataNotEqual;
+  }
+}
+
+static friendsDataCompareResult friendsPropositionCompareV(const void *a,
+                                                           const void *b)
+{
+  if (!a || !b) return friendsDataNotComparable;
+
+  return friendsPropositionCompare((const friendsPropositionData *)a,
+                                   (const friendsPropositionData *)b);
 }
 
 friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,

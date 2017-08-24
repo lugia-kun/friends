@@ -44,7 +44,7 @@ static friendsData *newData(friendsPark *park, friendsAtomType t,
   if (!d) return NULL;
 
   switch(t) {
-  case friendsNumricAtom:
+  case friendsNumericAtom:
     friendsSetNumeralAtom(d, numeral, e);
     if (friendsAnyError(*e)) return NULL;
     break;
@@ -55,6 +55,10 @@ static friendsData *newData(friendsPark *park, friendsAtomType t,
     if (friendsAnyError(*e)) return NULL;
     friendsSetTextAtom(d, ftxt, e);
     if (friendsAnyError(*e)) { free(ftxt); return NULL; }
+    break;
+  case friendsNextAtom:
+    friendsSetNextAtom(d, e);
+    if (friendsAnyError(*e)) return NULL;
     break;
   default:
     return NULL;

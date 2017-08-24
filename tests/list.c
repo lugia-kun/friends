@@ -83,7 +83,7 @@ int main(int argc, char **argv)
   eerror("friendsNewList");
 
   for (i = 0; i < 10; ++i) {
-    d = newData(park, friendsNumricAtom, i, NULL, &e);
+    d = newData(park, friendsNumericAtom, i, NULL, &e);
     eerror("newData");
 
     friendsListAppend(l, d, &e);

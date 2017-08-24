@@ -43,10 +43,6 @@ static friendsDataCompareResult friendsVariableCompare(const void *a,
     return friendsDataNotEqual;
   }
 
-  if (va->offset != vb->offset) {
-    return friendsDataNotEqual;
-  }
-
   r = friendsStringCompare(va->text, vb->text);
   if (r == 0) {
     return friendsDataEqual;
@@ -57,18 +53,12 @@ static friendsDataCompareResult friendsVariableCompare(const void *a,
 
 
 friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
-                                int offset, friendsBool tail, friendsError *e)
+                                friendsBool tail, friendsError *e)
 {
   friendsVariableData *d;
 
   friendsAssert(dest);
   friendsAssert(text);
-
-  if (tail == friendsTrue) {
-    friendsAssert(offset == 0);
-  } else {
-    friendsAssert(offset >= 0);
-  }
 
   d = friendsMalloc(sizeof(friendsVariableData), e);
   if (!d) {
@@ -76,7 +66,6 @@ friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
   }
 
   d->text = text;
-  d->offset = offset;
   d->tail = tail;
 
   if (!friendsSetData(dest, friendsVariable, d, friendsVariableDeleter,
@@ -94,11 +83,4 @@ const friendsChar *friendsVariableText(const friendsVariableData *d)
   friendsAssert(d);
 
   return d->text;
-}
-
-int friendsVariableOffset(const friendsVariableData *d)
-{
-  friendsAssert(d);
-
-  return d->offset;
 }

@@ -18,6 +18,10 @@
 size_t friendsCopyString(friendsChar *output, const friendsChar *input)
 {
   size_t c;
+
+  friendsAssert(input);
+  friendsAssert(output);
+
   c = 0;
   while((*output++ = *input++)) c++;
   return c;
@@ -27,12 +31,52 @@ size_t friendsStringArrayLength(const friendsChar *str)
 {
   size_t c;
   c = 0;
+
+  friendsAssert(str);
+
   while (*str++) c++;
   return c;
 }
 
+size_t friendsStringDuplicate(friendsChar **output,
+                              const friendsChar *fstp,
+                              const friendsChar *endp,
+                              friendsError *err)
+{
+  friendsChar *s;
+  size_t n;
+  size_t i;
+
+  friendsAssert(output);
+  friendsAssert(fstp);
+
+  if (!endp) {
+    endp = fstp + friendsStringArrayLength(fstp);
+  }
+
+  friendsAssert(fstp < endp);
+
+  n = endp - fstp + 1;
+  s = (friendsChar *)calloc(sizeof(friendsChar), n);
+  if (!s) {
+    friendsSetError(err, NOMEM);
+    return -1;
+  }
+  *output = s;
+  n--;
+
+  for (i = 0; i < n; ++i) {
+    *s++ = *fstp++;
+  }
+  *s = 0;
+  return n;
+}
+
 int friendsStringCompare(const friendsChar *a, const friendsChar *b)
 {
+  friendsAssert(a);
+  friendsAssert(b);
+
   while (*a && *b) {
     if (*a != *b) return *b - *a;
     a++;

@@ -52,8 +52,7 @@ struct friendsAtomDataT {
 
 struct friendsVariableDataT {
   friendsChar *text;         /*!< 変数名 */
-  int offset;                /*!< 差異（「〜の次」を使用した回数） */
-  friendsBool tail;          /*!< 尾部リスト */
+  friendsBool tail;
 };
 
 struct friendsArgumentDataT {
@@ -71,11 +70,7 @@ struct friendsPropositionDataT
 
 struct friendsMatchDataT
 {
-  friendsPark *park;           /*!< 所属するパーク */
-  friendsData *friend;
-  friendsData *variable1;      /*!< 問い合わせ文での変数 */
-  friendsData *variable2;
-  friendsData *atom;           /*!< アトム */
+  friendsBool t;
 };
 
 struct friendsMemoryT
@@ -109,6 +104,8 @@ struct friendsParserT
   friendsLineColumn curpos;
   friendsLineColumn tokpos;
   friendsFillFunc *fill;
+  friendsPark *park;
+  friendsError *err;
 };
 
 #endif /* FRIENDS_STRUCT_DATA_H */

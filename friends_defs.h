@@ -153,7 +153,8 @@ typedef enum {
  */
 typedef enum {
   friendsTextAtom,    /*!< 文字列 */
-  friendsNumricAtom,  /*!< 数値 */
+  friendsNumericAtom, /*!< 数値 */
+  friendsNextAtom,    /*!< 「次」 */
 
   friendsLastAtomType, /*!< 最後の型 */
 } friendsAtomType;
@@ -178,8 +179,9 @@ typedef enum {
   friendsNoError = 0,
 
   /* Friends System */
-  friendsErrorInvalidType,   /*!< データの型が正しくない（値の場合は INVAL） */
-  friendsErrorValidType,     /*!< 有効なデータ型になっている（未設定のデータが必要） */
+  friendsErrorInvalidType,  /*!< データの型が正しくない（値の場合は INVAL） */
+  friendsErrorValidType,
+                    /*!< 有効なデータ型になっている（未設定のデータが必要） */
 
   friendsErrorListIndex,     /*!< リストのインデックスが範囲外 */
   friendsErrorListNested,    /*!< リストがネストしている */
@@ -196,7 +198,7 @@ typedef enum {
   friendsErrorALREADY,       /*!< 接続が既に処理中である */
   friendsErrorBADE,          /*!< 不正なやり取り (exchange) である */
   friendsErrorBADF,          /*!< ファイルディスクリプターが不正である */
-  friendsErrorBADFD,         /*!< ファイルディスクリプターが不正な状態である */
+  friendsErrorBADFD,        /*!< ファイルディスクリプターが不正な状態である */
   friendsErrorBADMSG,        /*!< メッセージが不正である */
   friendsErrorBADR,          /*!< 不正なリクエストディスクリプター */
   friendsErrorBADRQC,        /*!< 不正なリクエストコード */
@@ -212,7 +214,7 @@ typedef enum {
   friendsErrorDEADLK,        /*!< リソースのデッドロックを回避した */
   friendsErrorDEADLOCK,      /*!< EDEADLK の同義語 */
   friendsErrorDESTADDRREQ,   /*!< 宛先アドレスが必要である */
-  friendsErrorDOM,           /*!< 数学関数で引き数が領域外である (out of domain) */
+  friendsErrorDOM,      /*!< 数学関数で引き数が領域外である (out of domain) */
   friendsErrorDQUOT,         /*!< ディスククォータ (quota) を超過した */
   friendsErrorEXIST,         /*!< ファイルが存在する */
   friendsErrorFAULT,         /*!< アドレスが不正である */
@@ -232,9 +234,9 @@ typedef enum {
   friendsErrorL2NSYNC,       /*!< 同期できていない (レベル 2) */
   friendsErrorL3HLT,         /*!< 停止 (レベル 3) */
   friendsErrorL3RST,         /*!< 停止 (レベル 3) */
-  friendsErrorLIBACC,        /*!< 必要な共有ライブラリにアクセスできなかった */
-  friendsErrorLIBBAD,        /*!< 壊れた共有ライブラリにアクセスしようとした */
-  friendsErrorLIBMAX,        /*!< リンクしようとした共有ライブラリが多過ぎる */
+  friendsErrorLIBACC,       /*!< 必要な共有ライブラリにアクセスできなかった */
+  friendsErrorLIBBAD,       /*!< 壊れた共有ライブラリにアクセスしようとした */
+  friendsErrorLIBMAX,       /*!< リンクしようとした共有ライブラリが多過ぎる */
   friendsErrorLIBSCN,        /*!< a.out のライブラリセクションが壊れている */
   friendsErrorLIBEXEC,       /*!< 共有ライブラリを直接実行できなかった */
   friendsErrorLOOP,          /*!< シンボリックリンクの回数が多過ぎる */
@@ -246,9 +248,11 @@ typedef enum {
   friendsErrorNETDOWN,       /*!< ネットワークが不通である */
   friendsErrorNETRESET,      /*!< 接続がネットワーク側から中止された */
   friendsErrorNETUNREACH,    /*!< ネットワークが到達不能である */
-  friendsErrorNFILE,         /*!< システム全体でオープンされているファイルが多過ぎる */
+  friendsErrorNFILE,
+                    /*!< システム全体でオープンされているファイルが多過ぎる */
   friendsErrorNOBUFS,        /*!< 使用可能なバッファー空間がない */
-  friendsErrorNODATA,  /*!< ストリームの読み出しキューの先頭に読み出し可能なメッセージがない */
+  friendsErrorNODATA,
+      /*!< ストリームの読み出しキューの先頭に読み出し可能なメッセージがない */
   friendsErrorNODEV,         /*!< そのようなデバイスは無い */
   friendsErrorNOENT,         /*!< そのようなファイルやディレクトリは無い */
   friendsErrorNOEXEC,        /*!< 実行ファイル形式のエラー */
@@ -274,20 +278,21 @@ typedef enum {
   friendsErrorNXIO,          /*!< そのようなデバイスやアドレスはない */
   friendsErrorOPNOTSUPP,     /*!< ソケットでサポートしていない操作である */
 
-  friendsErrorOVERFLOW,      /*!< 指定されたデータ型に格納するには値が大き過ぎる */
+  friendsErrorOVERFLOW, /*!< 指定されたデータ型に格納するには値が大き過ぎる */
   friendsErrorPERM,          /*!< 操作が許可されていない */
-  friendsErrorPFNOSUPPORT,   /*!< サポートされていないプロトコルファミリーである */
+  friendsErrorPFNOSUPPORT,
+                        /*!< サポートされていないプロトコルファミリーである */
   friendsErrorPIPE,          /*!< パイプが壊れている */
   friendsErrorPROTO,         /*!< プロトコルエラー */
   friendsErrorPROTONOSUPPORT,   /*!< プロトコルがサポートされていない */
-  friendsErrorPROTOTYPE,     /*!< ソケットに指定できないプロトコルタイプである */
+  friendsErrorPROTOTYPE,  /*!< ソケットに指定できないプロトコルタイプである */
   friendsErrorRANGE,         /*!< 結果が大き過ぎる */
   friendsErrorREMCHG,        /*!< リモートアドレスが変わった */
   friendsErrorREMOTE,        /*!< オブジェクトがリモートにある */
   friendsErrorREMOTEIO,      /*!< リモート I/O エラー */
-  friendsErrorRESTART,       /*!< システムコールが中断され再スタートが必要である */
+  friendsErrorRESTART,  /*!< システムコールが中断され再スタートが必要である */
   friendsErrorROFS,          /*!< 読み出し専用のファイルシステムである */
-  friendsErrorSHUTDOWN,      /*!< 通信相手がシャットダウンされて送信できない */
+  friendsErrorSHUTDOWN,     /*!< 通信相手がシャットダウンされて送信できない */
   friendsErrorSPIPE,         /*!< 無効なシーク */
   friendsErrorSOCKTNOSUPPORT,   /*!< サポートされていないソケット種別である */
   friendsErrorSRCH,          /*!< そのようなプロセスは無い */
@@ -299,7 +304,7 @@ typedef enum {
   friendsErrorTIMEDOUT,      /*!< 操作がタイムアウトした */
   friendsErrorTXTBSY,        /*!< テキストファイルが使用中である */
   friendsErrorUCLEAN,        /*!< Structure needs cleaning */
-  friendsErrorUNATCH,        /*!< プロトコルのドライバが付与 (attach) されていない */
+  friendsErrorUNATCH, /*!< プロトコルのドライバが付与 (attach) されていない */
   friendsErrorUSERS,         /*!< ユーザー数が多過ぎる */
   friendsErrorWOULDBLOCK,    /*!< 操作がブロックされる見込みである */
   friendsErrorXDEV,          /*!< 不適切なリンク */
@@ -319,10 +324,12 @@ typedef enum {
   friendsErrorLevelAssert,
 } friendsErrorLevel;
 
+enum friendsFixedHashValues {
+  friendsHashValueNextAtom = 0x01,
+};
+
 /**
  * @brief フレンズのアトムとかの比較結果なのです。
- *
- * 「等しくない」がほしい場合は != friendsDataEqual で比較すると良いのです。
  *
  * `friendsDataNotEqual` は「比較はできるけど、大小は決められず等しく
  * ない」を表すのです。対して、上記の「等しくない」は「比較できるかと
@@ -340,6 +347,8 @@ typedef enum {
   friendsDataCompareSpecialsMask = 0x0f, /*!< 特殊な比較をマスクするための値 */
   friendsDataDifferentType = 0x08, /*!< typeof(a) != typeof(b) */
   friendsDataInAnotherPark = 0x10, /*!< park(a) != park(b) */
+  friendsDataSetEqual = 0x20, /*!< 違うデータではあるが、friendsSet の中では
+                                   等しいものとして扱う */
 
   friendsDataLastCompareResult = 0xff,
 } friendsDataCompareResult;
@@ -352,7 +361,8 @@ typedef void friendsPointerDeleter(void *);
 /**
  * @brief データの比較関数の形式なのです。
  */
-typedef friendsDataCompareResult friendsDataCompareFunc(const void *, const void *);
+typedef friendsDataCompareResult friendsDataCompareFunc(const void *,
+                                                        const void *);
 
 /**
  * @brief 普通の文字を Friends の文字に変換するエンコーダ関数の形式なのです。
@@ -366,7 +376,8 @@ typedef int friendsCharDecoder(char **, const friendsChar *, friendsError *);
 
 /**
  * @typedef friendsCodeSet
- * @brief Friends 内で使う文字コードの変換関数を定義するための型なのです。
+ * @brief Friends 内で使う文字コードの変換関数を定義するための型なので
+ *        す。
  */
 struct friendsCodeSetT {
   friendsCharEncoder *enc; /*!< エンコーダなのです。 */
@@ -390,9 +401,11 @@ typedef int friendsFillFunc(friendsParser *p, int count, void *arg);
 
 /**
  * @macro friendsStaticThreadLocal
- * @brief 「スレッドローカル」な static 変数を定義するための装飾子なのです。
+ * @brief 「スレッドローカル」な static 変数を定義するための装飾子なの
+ *        です。
  *
- * コンパイラが C11 に対応していると言っているなら、C11 の記法を使うのです。
+ * コンパイラが C11 に対応していると言っているなら、C11 の記法を使うの
+ * です。
  *
  * それ以外で、GNU C Compiler を使っているなら、gcc の拡張を使うのです。
  * MSVC を使っているなら、MSVC の拡張を使うのです。

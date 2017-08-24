@@ -221,3 +221,18 @@ friendsHash friendsHashBinary(const void *s, const void *e)
   h = h & (t - 1);
   return h | t;
 }
+
+int friendsDataCompareIsEqual(friendsDataCompareResult x)
+{
+  return (x == friendsDataEqual);
+}
+
+int friendsDataCompareIsNotEqual(friendsDataCompareResult x)
+{
+  return (x != friendsDataEqual);
+}
+
+int friendsDataCompareIsSetEqual(friendsDataCompareResult x)
+{
+  return friendsDataCompareIsEqual(x) || ((x & friendsDataSetEqual) > 0);
+}

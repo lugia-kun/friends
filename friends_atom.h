@@ -20,8 +20,9 @@ const friendsAtomData *friendsGetAtom(friendsData *d);
  * @brief 数字のアトムを設定するのです。
  * @param dest 設定先のデータをよこすのです。
  * @param a    設定する値をよこすのです。
- * @param e    NULL でない値をよこしたなら、そこにエラーの情報を書き込むのです。
- * @return よこしたデータを返すのです。設定できなかった時は NULL を返すのです。
+ * @param e    NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return よこしたデータを返すのです。設定できなかった時は NULL を返
+ *         すのです。
  */
 friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e);
 
@@ -29,18 +30,34 @@ friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e);
  * @brief 文字のアトムを設定するのです。
  * @param dest 設定先のデータをよこすのです。
  * @param t    設定する文字列をよこすのです。
- * @param e    NULL でない値をよこしたなら、そこにエラーの情報を書き込むのです。
+ * @param e    NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return よこしたデータを返すのです。
  *
- * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に捨てられるのです。
+ * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に
+ * 捨てられるのです。
  */
 friendsData *friendsSetTextAtom(friendsData *dest, friendsChar *t,
                                 friendsError *e);
 
 /**
+ * @brief 「次」を表すアトムを設定するのです。
+ * @param dest 設定先のデータをよこすのです。
+ * @param e    NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return よこしたデータを返すのです。
+ */
+friendsData *friendsSetNextAtom(friendsData *dest, friendsError *e);
+
+/**
+ * @brief アトムの種類を得るのです。
+ * @param a アトムデータをよこすのです。
+ * @return アトムの種類を返すのです。
+ */
+friendsAtomType friendsGetAtomType(const friendsAtomData *a);
+
+/**
  * @brief アトムデータの数値を得るのです。
  * @param a アトムデータをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return 数値を返すのです。数値でない時は -1 を返すのです。
  *
  * @note 将来の拡張で負数を使えるようにするかもしれないので、エラーの
@@ -51,8 +68,9 @@ int friendsGetAtomNumber(const friendsAtomData *a, friendsError *e);
 /**
  * @brief アトムデータから文字列を得るのです。
  * @param a アトムデータをよこすのです。
- * @param e NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
- * @return 文字列を返すのです。文字列アトムでない時は、NULL を返すのです。
+ * @param e NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 文字列を返すのです。文字列アトムでない時は、NULL を返すので
+ *         す。
  */
 const friendsChar *friendsGetAtomText(const friendsAtomData *a, friendsError *e);
 

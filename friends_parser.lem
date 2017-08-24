@@ -1,7 +1,12 @@
 %include{
 #include "friends_defs.h"
 #include "friends_struct_data.h"
+#include "friends_data.h"
 #include "friends_error.h"
+#include "friends_atom.h"
+#include "friends_variable.h"
+#include "friends_list.h"
+#include "friends_string.h"
 
 #ifdef assert
 #undef assert
@@ -14,7 +19,7 @@
 %name friendsParserCore
 %token_prefix friends
 
-friends_world ::= statements.
+friends_world ::= statements END.
 statements ::= statements statement.
 
 statement ::= friend_define.
@@ -28,15 +33,101 @@ friend_define ::= WAAI conditionals friend_part NANDANE TANOSHI.
 friend_ask ::= friend_part NANDAKKE.
 friend_ask ::= conditionals friend_part NANDAKKE.
 
-friend_part ::= list PARTICLE FRIEND_NAME FRIEND.
-friend_part ::= list TOKA PARTICLE FRIEND_NAME FRIEND.
-
 conditionals ::= conditionals friend_part THEN.
 conditionals ::= friend_part THEN.
 
-list ::= list PARTICLE atom_or_variable.
-list ::= atom_or_variable.
+friend_part ::= complete_list FRIEND_NAME FRIEND.
 
-atom_or_variable ::= ATOM.
-atom_or_variable ::= VARIABLE.
-atom_or_variable ::= atom_or_variable NO TSUGI.
+complete_list(A) ::= list(B) PARTICLE. { A = B; }
+complete_list(A) ::= list(B) PARTICLE VARIABLE(C) TOKA PARTICLE. {
+  friendsData *d;
+  d = friendsNewData(p->park, p->err);
+  friendsSetVariable(d, C, friendsTrue, p->err);
+  A = B;
+}
+
+list(A) ::= term(B). {
+  A = friendsNewList(p->err);
+  friendsListAppend(A, B, p->err);
+}
+
+list(A) ::= list(B) PARTICLE term(C). {
+  A = B;
+  friendsListAppend(A, C, p->err);
+}
+
+term(A) ::= ATOM(B). {
+  A = friendsNewData(p->park, p->err);
+  friendsSetTextAtom(A, B, p->err);
+}
+
+term(A) ::= VARIABLE(B). {
+  A = friendsNewData(p->park, p->err);
+  friendsSetVariable(A, B, friendsFalse, p->err);
+}
+
+term(A) ::= LKAGI list(B) RKAGI. {
+  A = friendsNewData(p->park, p->err);
+  friendsSetList(A, B, p->err);
+}
+
+term(A) ::= LKAGI list(B) PARTICLE RKAGI. {
+  A = friendsNewData(p->park, p->err);
+  friendsSetList(A, B, p->err);
+}
+
+term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA RKAGI. {
+  A = friendsNewData(p->park, p->err);
+  friendsSetVariable(A, C, friendsTrue, p->err);
+  friendsListAppend(B, A, p->err);
+  A = friendsNewData(p->park, p->err);
+  friendsSetList(A, B, p->err);
+}
+
+term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA PARTICLE RKAGI. {
+  A = friendsNewData(p->park, p->err);
+  friendsSetVariable(A, C, friendsTrue, p->err);
+  friendsListAppend(B, A, p->err);
+  A = friendsNewData(p->park, p->err);
+  friendsSetList(A, B, p->err);
+}
+
+term(A) ::= term(B) NO ATOM(C). {
+  friendsDataList *ll;
+  friendsData *d;
+  d = friendsNewData(p->park, p->err);
+  friendsSetTextAtom(d, C, p->err);
+  ll = friendsGetList(B);
+  if (ll) {
+    friendsListAppend(ll, d, p->err);
+    A = B;
+  } else {
+    A = friendsNewData(p->park, p->err);
+    ll = friendsNewList(p->err);
+    friendsListAppend(ll, d, p->err);
+    friendsSetList(A, ll, p->err);
+  }
+}
+
+term(A) ::= term(B) NO TSUGI. {
+  friendsDataList *ll;
+  friendsData *d;
+  d = friendsNewData(p->park, p->err);
+  friendsSetNextAtom(d, p->err);
+  ll = friendsGetList(B);
+  if (ll) {
+    friendsListAppend(ll, d, p->err);
+    A = B;
+  } else {
+    A = friendsNewData(p->park, p->err);
+    ll = friendsNewList(p->err);
+    friendsListAppend(ll, d, p->err);
+    friendsSetList(A, ll, p->err);
+  }
+}
+
+%type complete_list {friendsDataList *}
+%type list {friendsDataList *}
+%type term {friendsData *}
+%type ATOM {friendsChar *}
+%type VARIABLE {friendsChar *}

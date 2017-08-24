@@ -59,6 +59,7 @@ friendsBool listPrinter(friendsDataList *l, void *a)
   friendsError e;
   friendsDataSetHash h;
   friendsHash hsh;
+  friendsAtomType at;
   int n;
   listPrinterController *x = (listPrinterController *)a;
 
@@ -72,17 +73,27 @@ friendsBool listPrinter(friendsDataList *l, void *a)
   ad = friendsGetAtom(d);
   e = friendsNoError;
   if (ad) {
-    ch = friendsGetAtomText(ad, &e);
-    if (ch) {
+    at = friendsGetAtomType(ad);
+    switch (at) {
+    case friendsTextAtom:
+      ch = friendsGetAtomText(ad, &e);
       printListAtom(x, l, "%02x %08x %p <text> %ls", h, hsh, d, ch);
-    } else {
+      break;
+    case friendsNumericAtom:
       e = friendsNoError;
       n = friendsGetAtomNumber(ad, &e);
       if (friendsAnyError(e)) {
-        printListAtom(x, l, "%02x %08x %p <n/a>", hsh, h, d);
+        goto not_available;
       } else {
         printListAtom(x, l, "%02x %08x %p <int>  %d", h, hsh, d, n);
       }
+      break;
+    case friendsNextAtom:
+      printListAtom(x, l, "%02x %08x %p <next>", h, hsh, d);
+      break;
+    not_available:
+    default:
+      printListAtom(x, l, "%02x %08x %p <n/a>", h, hsh, d);
     }
   } else {
     printListAtom(x, l, "%02x %08x %p <null>", h, hsh, d);
@@ -214,8 +225,14 @@ int main(int argc, char **argv)
 
   printSet(s);
 
+  d = newData(park, friendsNextAtom, 0, NULL, &e);
+  eerror("newData");
+
+  friendsSetInsert(s, d, &e);
+  eerror("friendsSetInsert");
+
   for (i = 0; i < 10; ++i) {
-    d = newData(park, friendsNumricAtom, i, NULL, &e);
+    d = newData(park, friendsNumericAtom, i, NULL, &e);
     eerror("newData");
 
     friendsSetInsert(s, d, &e);
@@ -223,7 +240,7 @@ int main(int argc, char **argv)
   }
 
   for (i = 10; i < 2000; i += 100) {
-    d = newData(park, friendsNumricAtom, i, NULL, &e);
+    d = newData(park, friendsNumericAtom, i, NULL, &e);
     eerror("newData");
 
     friendsSetInsert(s, d, &e);

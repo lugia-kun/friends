@@ -70,9 +70,6 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       u_falpha = [\uff02-\uff07\uff0a\uff0b\uff0d-\uff1e\uff20-\uff60];
       atomchar = (u_ascii|u_noncjk|u_extra|u_jpunct|u_cjk|u_falpha);
 
-      ws = [\t ,\u00a0\u3001\u3000\uff0c\uff64]; // 、，（全角SP）
-      wss = ws+;
-      nl = ("\n" | "\r\n" | "\r");
       _Exc = [!\uff01];  // ！
       _Que = [?\uff1f];  // ？
       _Kop = [\u300c\uff62];   // 「
@@ -82,6 +79,13 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       _Dop = [\u300e];   // 『
       _Dcl = [\u300f];   // 』
       _Und = [_\uff3f];  // ＿
+
+      end = "\x00";
+      brackets = (_Kop|_Kcl|_Pop|_Pcl|_Dop|_Dcl);
+      ws = [\t ,\u00a0\u3001\u3000\uff0c\uff64]; // 、，（全角SP）
+      wss = ws+;
+      nl = ("\n" | "\r\n" | "\r");
+      sep = (wss|brackets|nl|end);
 
       Dakuten = [\u3099\u309b];
       H_A  =  "\u3042"; // あ
@@ -155,29 +159,30 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       Tsugi = (H_Tu H_Gi | "\u6b21"); // つぎ | 次
 
       * { friendsSetError(err, ILSEQ); break; }
-      "\x00" { break; }
+      end { Parse(END); break; }
 
-      nl                { continue; }
-      wss               { continue; }
+      nl  { continue; }
+      wss { continue; }
 
-      Waai    /(wss|nl) { Parse(WAAI); continue; }
-      Nandane /(wss|nl) { Parse(NANDANE); continue; }
-      Nandakke/(wss|nl) { Parse(NANDAKKE); continue; }
-      No/(wss|nl)       { Parse(NO); continue; }
-      Tanoshi/(wss|nl)  { Parse(TANOSHI); continue; }
-      Tsugi/(wss|nl)    { Parse(TSUGI); continue; }
-      Friends/(wss|nl)  { Parse(FRIEND); continue; }
-      Toka/(wss|nl)     { Parse(TOKA); continue; }
+      Waai    /sep { Parse(WAAI); continue; }
+      Nandane /sep { Parse(NANDANE); continue; }
+      Nandakke/sep { Parse(NANDAKKE); continue; }
+      No/sep       { Parse(NO); continue; }
+      Tanoshi/sep  { Parse(TANOSHI); continue; }
+      Tsugi/sep    { Parse(TSUGI); continue; }
+      Friends/sep  { Parse(FRIEND); continue; }
+      Toka/sep     { Parse(TOKA); continue; }
 
       (Anata|Kimi|Kare|Kanojo|Dare|Nani|Are|Kore|Korera|
-       Sore|Sorera|Koko|Soko|Asoko|Doko|Dore)/(wss|nl)
+       Sore|Sorera|Koko|Soko|Asoko|Doko|Dore)/sep
                         { Parse(VARIABLE); continue; }
 
-      _Und               { goto und; }
-      _Kop               { ttype = friendsATOM; goto Kcl; }
-      _Pop               { ttype = friendsATOM; goto Pcl; }
-      _Dop               { ttype = friendsATOM; goto Dcl; }
-      atomchar+/(wss|nl) { goto general_token; }
+      _Und          { goto und; }
+      _Kop          { Parse(LKAGI); continue; }
+      _Kcl          { Parse(RKAGI); continue; }
+      _Pop          { ttype = friendsATOM; goto Pcl; }
+      _Dop          { ttype = friendsATOM; goto Dcl; }
+      atomchar+/sep { goto general_token; }
     */
 
     friendsUnreachable();
@@ -188,6 +193,7 @@ void friendsParse(friendsPark *park, const friendsChar *str,
     case friendsVARIABLE:
     case friendsTSUGI:
     case friendsTOKA:
+    case friendsRKAGI:
       Parse(PARTICLE);
       break;
     default:
@@ -204,7 +210,6 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       re2c:indent:top = 3;
 
       * { friendsSetError(err, ILSEQ); break; }
-      _Kop { goto Kcl; }
       _Pop { goto Pcl; }
       _Dop { goto Dcl; }
       atomchar+/(wss|nl) {
@@ -215,30 +220,14 @@ void friendsParse(friendsPark *park, const friendsChar *str,
 
     friendsUnreachable();
 
-  Kcl:
-    p.token = p.cur;
-    for (;;) {
-      p.stoken = p.cur;
-      /*!re2c
-        re2c:indent:top = 3;
-
-        * { friendsSetError(err, ILSEQ); break; }
-        _Kcl { break; }
-        utf8 { continue; }
-      */
-    }
-    goto bracket;
-
   Pcl:
     p.token = p.cur;
     for (;;) {
       p.stoken = p.cur;
       /*!re2c
-        re2c:indent:top = 3;
-
-        * { friendsSetError(err, ILSEQ); break; }
-        _Pcl { break; }
-        utf8 { continue; }
+       * { friendsSetError(err, ILSEQ); break; }
+       _Pcl { break; }
+       utf8 { continue; }
       */
     }
     goto bracket;

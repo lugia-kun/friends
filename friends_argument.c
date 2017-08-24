@@ -43,7 +43,6 @@ friendsData *friendsSetArgument(friendsData *dest, friendsData *d,
   switch (t) {
   case friendsAtom:
   case friendsVariable:
-  case friendsEtcetra:
     break;
   default:
     friendsSetError(err, InvalidType);
