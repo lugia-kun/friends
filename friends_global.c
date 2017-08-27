@@ -5,16 +5,20 @@
 #include "enc/utf8.h"
 
 struct friendsGlobalT {
-  friendsCodeSet terminal_encoding;
+  const friendsCodeSet *terminal_encoding;
 };
 
 static struct friendsGlobalT friendsGlobalData = {
-  {friendsUtf8ToFChar, friendsFCharToUtf8, "UTF-8"},
+  NULL,
 };
 
 const friendsCodeSet *friendsGetTerminalEncoding(void)
 {
-  return &friendsGlobalData.terminal_encoding;
+  if (!friendsGlobalData.terminal_encoding) {
+    return friendsUtf8Set();
+  } else {
+    return friendsGlobalData.terminal_encoding;
+  }
 }
 
 void friendsSetTerminalEncoding(const friendsCodeSet *set)
@@ -24,5 +28,5 @@ void friendsSetTerminalEncoding(const friendsCodeSet *set)
   friendsAssert(set->dec);
   friendsAssert(set->name);
 
-  friendsGlobalData.terminal_encoding = *set;
+  friendsGlobalData.terminal_encoding = set;
 }

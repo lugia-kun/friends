@@ -1,4 +1,4 @@
-#include "friends-config.h"
+#include "friends_config.h"
 
 #include <stdlib.h>
 

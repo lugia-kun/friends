@@ -111,7 +111,7 @@ int friendsFCharToUtf8(char **buf, const friendsChar *b, friendsError *err)
         }
         [\u0080-\u07ff] {
           if (n + 1 < limit) {
-            *p++ = (unsigned char)(0xb0 | ((*tok) >> 6));
+            *p++ = (unsigned char)(0xc0 | ((*tok) >> 6));
             *p++ = (unsigned char)(0x80 | ((*tok) & 0x3f));
           }
           n += 2;
@@ -149,7 +149,8 @@ const char *friendsUtf8ICUName(void) { return NULL; }
 const char *friendsUtf8IANAName(void) { return "UTF-8"; }
 
 static friendsCodeSet friendsUtf8CodeSetData = {
-  friendsUtf8ToFChar, friendsFCharToUtf8, "UTF-8"
+  friendsOneUtf8ToFChar, friendsUtf8ToFChar, friendsFCharToUtf8,
+  friendsUtf8MaxChar, "UTF-8"
 };
 
 const friendsCodeSet *friendsUtf8Set(void)

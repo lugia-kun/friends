@@ -9,7 +9,7 @@
 #include "friends_lexer.h"
 #include "friends_error.h"
 #include "friends_string.h"
-#include "friends_parser.h"
+#include "friends_grammer.h"
 
 /* provided by lemon paraser generator. */
 void *friendsParserCoreAlloc(void *(*allocator)(size_t));

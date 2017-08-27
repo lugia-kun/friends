@@ -1,0 +1,33 @@
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "test_common.h"
+
+#include "friends_defs.h"
+
+#include "enc/sjis.h"
+#include "enc/eucjp.h"
+#include "enc/utf8.h"
+
+#include "friends_string.h"
+#include "friends_test.h"
+
+
+int main(int argc, char **argv)
+{
+#define eerror(func) if_error_goto_error(e, func, error)
+  friendsError e;
+  int ret;
+  int i;
+
+ clean:
+  i = friendsTestErrorCount();
+  if (i > 0) ret = EXIT_FAILURE;
+  return ret;
+
+ error:
+  ret = EXIT_FAILURE;
+  goto clean;
+}

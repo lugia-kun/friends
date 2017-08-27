@@ -638,7 +638,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
                           "(%s)[2] = %#04x; (%s)[3] = %#04x; "
                           "goto mktble_ok; }\n",
                           ci->mbcs,
-                          data.to, (0xb0 | ((ci->u32char >>  6) & 0x1f)),
+                          data.to, (0xc0 | ((ci->u32char >>  6) & 0x1f)),
                           data.to, (0x80 | ( ci->u32char        & 0x3f)),
                           data.to, 0, data.to, 0);
               } else {

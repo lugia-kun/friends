@@ -106,8 +106,8 @@ friendsDataList *friendsPropositionListInPark(friendsPark *park,
  * 2. 適当な長さの文字列を読み込んで、friendsAppendParseText 関数で解
  *    読装置にセットするのです。
  *
- * 3. 解読装置を friendsLexer 関数に渡すのです。friendsLexer 関数は、
- *    その文字列を単語に区切って解読装置に設定するのです。
+ * 3. 解読装置を friendsLex 関数に渡すのです。friendsLex 関数は、その
+ *    文字列を単語に区切って解読装置に設定するのです。
  *
  * 4. 解読装置を friendsParse 関数に渡すと分解した単語の組み合わせから、
  *    情報を得るのです。

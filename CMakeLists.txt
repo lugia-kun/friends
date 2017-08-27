@@ -117,7 +117,7 @@ set(FRIENDS_C_SOURCES
   friends_atom.c friends_argument.c
   friends_proposition.c friends_match.c
   friends_global.c)
-set(FRIENDS_LEMON_SOURCES friends_parser.lem)
+set(FRIENDS_LEMON_SOURCES friends_grammer.lem)
 set(FRIENDS_RE2C_SOURCES  friends_lexer.re friends_string.re
   friends_printf.re friends_pathname.re
   enc/utf8.re  enc/utf8r.re)
@@ -130,8 +130,6 @@ if(FRIENDS_ENABLE_SJIS)
     enc/sjis.re enc/sjisr.re Sjis enc/sjis.h "Shift_JIS")
   list(APPEND FRIENDS_RE2C_SOURCES
     enc/sjis.re  enc/sjisr.re)
-  set_source_files_properties(enc/sjisr.re PROPERTIES
-    COMPILE_OPTIONS "")
 endif()
 if(FRIENDS_ENABLE_EUCJP)
   add_mktble_target(${CMAKE_CURRENT_SOURCE_DIR}/enc/glibc-EUC_JP-2.3.3.ucm
@@ -141,8 +139,6 @@ if(FRIENDS_ENABLE_EUCJP)
     enc/eucjp.re enc/eucjpr.re Eucjp enc/eucjp.h "EUC-JP")
   list(APPEND FRIENDS_RE2C_SOURCES
     enc/eucjp.re enc/eucjpr.re)
-  set_source_files_properties(enc/eucjpr.re PROPERTIES
-    COMPILE_OPTIONS "")
 endif()
 
 set_source_files_properties(${FRIENDS_RE2C_SOURCES} PROPERTIES
@@ -150,6 +146,16 @@ set_source_files_properties(${FRIENDS_RE2C_SOURCES} PROPERTIES
 
 set_source_files_properties(enc/utf8r.re PROPERTIES
   COMPILE_OPTIONS "-8")
+
+if (FRIENDS_ENABLE_SJIS)
+  set_source_files_properties(enc/sjisr.re PROPERTIES
+    COMPILE_OPTIONS "")
+endif()
+
+if (FRIENDS_ENABLE_EUCJP)
+  set_source_files_properties(enc/eucjpr.re PROPERTIES
+    COMPILE_OPTIONS "")
+endif()
 
 set(FRIENDS_RE2C_C_SOURCES)
 foreach(__RESRC ${FRIENDS_RE2C_SOURCES})
@@ -188,8 +194,8 @@ set_target_properties(friends PROPERTIES
   "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR};${LIBFRIENDS_INCLUDE_DIR}")
 
 configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/friends-config.h.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/friends-config.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/friends_config.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/friends_config.h"
   )
 
 if (FRIENDS_ENABLE_TEST)

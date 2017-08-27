@@ -100,7 +100,8 @@ const char *friends@NAME@ICUName(void) { return "@INAME@"; }
 const char *friends@NAME@IANAName(void) { return "@IANA_NAME@"; }
 
 static friendsCodeSet friends@NAME@CodeSetData = {
-  friends@NAME@ToFChar, friendsFCharTo@NAME@, "@IANA_NAME@"
+  friendsOne@NAME@ToFChar, friends@NAME@ToFChar, friendsFCharTo@NAME@,
+  friends@NAME@MaxChar, "@IANA_NAME@"
 };
 
 const friendsCodeSet *friends@NAME@Set(void)

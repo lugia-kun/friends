@@ -92,9 +92,18 @@ struct friendsLineColumnT {
   long column;
 };
 
+struct friendsTokenT
+{
+  friendsChar *token;
+  int tokenType;
+
+};
+
 struct friendsParserT
 {
   void *parserData;
+  friendsDataList *buffer_list;
+  friendsDataList *bufp;
   const friendsChar *cur;
   const friendsChar *mark;
   const friendsChar *cmark;

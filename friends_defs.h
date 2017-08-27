@@ -9,7 +9,7 @@
 
 #include <stddef.h>
 
-#include "friends-config.h"
+#include "friends_config.h"
 
 /* Core Data types */
 struct friendsMemoryT;
@@ -108,14 +108,20 @@ typedef unsigned int  friendsHash;
  * 普通は、UTF-16 モードの方が速いのです。メモリの使用量は、UTF-8 モー
  * ドの方が多くなるのです。
  */
-
+/**
+ * @macro FRIENDS_MAX_CHAR
+ * @brief 文字1文字あたりに使う、`friendsChar` の配列要素数なのです。
+ */
 /* UTF-8 */
 #if defined(FRIENDS_USE_UTF8_INTERNAL)
+#define FRIENDS_MAX_CHAR 4
 typedef unsigned char friendsChar;
 
 #else
 
 /* UTF-16 */
+#define FRIENDS_MAX_CHAR 2
+
 #if defined(HAVE_WCHAR_H) && defined(HAVE_WCHAR_T) && WCHAR_T_SIZE == 2
 #include <wchar.h>
 typedef unsigned wchar_t friendsChar;
@@ -370,9 +376,20 @@ typedef friendsDataCompareResult friendsDataCompareFunc(const void *,
 typedef int friendsCharEncoder(friendsChar **, const char *, friendsError *);
 
 /**
+ * @brief 普通の文字を Friends の文字に変換するエンコーダ関数の形式なのです。
+ */
+typedef int friendsOneCharEncoder(friendsChar [FRIENDS_MAX_CHAR],
+                                  const char **, friendsError *);
+
+/**
  * @brief Friends の文字を普通の文字に変換するデコーダ関数の形式なのです。
  */
 typedef int friendsCharDecoder(char **, const friendsChar *, friendsError *);
+
+/**
+ * @brief 普通の文字での1文字のバイト数の最大値を返す関数の形式なのです。
+ */
+typedef int friendsEncodingMaxChar(void);
 
 /**
  * @typedef friendsCodeSet
@@ -380,8 +397,10 @@ typedef int friendsCharDecoder(char **, const friendsChar *, friendsError *);
  *        す。
  */
 struct friendsCodeSetT {
+  friendsOneCharEncoder *one_enc; /*!< 1文字エンコーダなのです。 */
   friendsCharEncoder *enc; /*!< エンコーダなのです。 */
   friendsCharDecoder *dec; /*!< デコーダなのです。 */
+  friendsEncodingMaxChar *max; /*!< 1文字の最大バイト数なのです。 */
   const char *name;        /*!< 文字コードの名前なのです。 */
 };
 typedef struct friendsCodeSetT friendsCodeSet;

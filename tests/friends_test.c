@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "friends-config.h"
+#include "friends_config.h"
 #include "friends_io.h"
 #include "friends_test.h"
 #include "friends_error.h"

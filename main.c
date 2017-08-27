@@ -9,8 +9,11 @@
 #include "friends_park.h"
 #include "friends_data.h"
 #include "friends_atom.h"
+#include "friends_string.h"
 
 int main(int argc, char **argv)
 {
+  friendsError e;
+  friendsSetErrorV(e, NOMEM);
   return 0;
 }

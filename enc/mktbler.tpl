@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "@HEADER_NAME@"
+#include "friends_defs.h"
 #include "friends_error.h"
 
 /*!re2c
@@ -23,35 +24,79 @@
     }                             \
   } while(0)
 
+int friendsOne@NAME@ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
+                            const char **buf, friendsError *err)
+{
+  const char *mark;
+  const char *cur;
+  int i;
+
+  friendsAssert(buf);
+  friendsAssert(*buf);
+  friendsAssert(fchar);
+
+  /* mark は使うかもしれないし、使わないかもしれないのです。 */
+  friendsUnUsed(mark);
+
+  cur = *buf;
+  fchar[0] = 0;
+
+#ifdef FRIENDS_USE_UTF8_INTERNAL
+  /*!mktble
+    mktble:dir = -1;
+    mktble:utfbits = 8;
+    mktble:from = "cur";
+    mktble:to = "fchar";
+    mktble:indent:top = 1;
+    mktble:indent:string = "  ";
+
+    OK  { goto ok; }
+    NG  { friendsSetError(err, ILSEQ); goto ng; }
+    END { goto ok; }
+  */
+
+#else
+  /*!mktble
+    mktble:dir = -1;
+    mktble:utfbits = 16;
+
+    OK  { goto ok; }
+    NG  { friendsSetError(err, ILSEQ); goto ng; }
+    END { goto ok; }
+  */
+
+#endif
+
+  friendsUnreachable();
+
+ ok:
+  *buf = cur;
+  for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
+    if (fchar[i] == 0) break;
+  }
+  return i;
+
+ ng:
+  return -1;
+}
+
 int friends@NAME@ToFChar(friendsChar **ret, const char *buf, friendsError *err)
 {
   int n, limit;
   int step, i;
 
-  const char *mark;
   const char *cur;
   friendsChar *b;
   friendsChar *t;
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-  friendsChar fchar[4];
-#else
-  friendsChar fchar[2];
-#endif
-
-  /* mark は使うかもしれないし、使わないかもしれないのです。 */
-  friendsUnUsed(mark);
+  friendsChar fchar[FRIENDS_MAX_CHAR];
 
   friendsAssert(ret);
   friendsAssert(buf);
 
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-  limit = 80;
-#else
-  limit = 40;
-#endif
+  limit = 80 / sizeof(friendsChar);
 
   b = (friendsChar *)malloc(sizeof(friendsChar) * limit);
-  if (!b) { friendsSetError(err, NOMEM); return 2; }
+  if (!b) { friendsSetError(err, NOMEM); return -1; }
   t = b;
 
   n = 0;
@@ -59,7 +104,7 @@ int friends@NAME@ToFChar(friendsChar **ret, const char *buf, friendsError *err)
     if (step) {
       free(b);
       b = (friendsChar *)malloc(sizeof(friendsChar) * n);
-      if (!b) { friendsSetError(err, NOMEM); return 2; }
+      if (!b) { friendsSetError(err, NOMEM); return -1; }
       t = b;
       limit = n;
       n = 0;
@@ -67,74 +112,27 @@ int friends@NAME@ToFChar(friendsChar **ret, const char *buf, friendsError *err)
 
     cur = buf;
     for(;;) {
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-      /*!mktble
-        mktble:dir = -1;
-        mktble:utfbits = 8;
-        mktble:from = "cur";
-        mktble:to = "fchar";
-        mktble:indent:top = 3;
-        mktble:indent:string = "  ";
-
-        OK {
-          for(i = 0; i < 4; ++i) {
-            if (fchar[i] == '\0') break;
-            n++;
-            friendsTestOverFlow(n);
-          }
-          if (limit - n > 0) {
-            for (i = 0; i < 4; ++i) {
-              if (fchar[i] == '\0') break;
-              *t++ = fchar[i];
-            }
-          }
-          continue;
+      i = friendsOne@NAME@ToFChar(fchar, &cur, err);
+      if (i < 0) { goto error; }
+      if (i == 0) {
+        if (limit - n > 0) {
+          *t++ = 0;
         }
-        NG { friendsSetError(err, ILSEQ); goto error; }
-        END {
-          if (limit - n > 0) {
-            *t++ = '\0';
-          }
-          n++;
-          friendsTestOverFlow(n);
-          break;
-        }
-      */
-
-      friendsUnreachable();
-
-#else
-      /*!mktble
-        mktble:dir = -1;
-        mktble:utfbits = 16;
-
-        OK {
-          for(i = 0; i < 2; ++i) {
+        n++;
+        friendsTestOverFlow(n);
+        break;
+      }
+      for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
+        if (fchar[i] == 0) break;
+        n++;
+        friendsTestOverFlow(n);
+      }
+      if (limit - n > 0) {
+        for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
           if (fchar[i] == 0) break;
-            n++;
-            friendsTestOverFlow(n);
-          }
-          if (limit - n > 0) {
-            for (i = 0; i < 2; ++i) {
-              if (fchar[i] == 0) break;
-              *t++ = fchar[i];
-            }
-          }
-          continue;
+          *t++ = fchar[i];
         }
-        NG { friendsSetError(err, ILSEQ); goto error; }
-        END {
-          if (limit - n > 0) {
-            *t++ = 0;
-          }
-          n++;
-          friendsTestOverFlow(n);
-          break;
-        }
-      */
-
-      friendsUnreachable();
-#endif
+      }
     }
     if (n <= limit) {
       break;

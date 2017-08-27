@@ -10,7 +10,7 @@
 #include "friends_io.h"
 #include "friends_global.h"
 #include "friends_string.h"
-#include "friends-config.h"
+#include "friends_config.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -708,4 +708,11 @@ void friendsSetErrorFromErrno(friendsError *errpvar, int errn)
 
   default: *errpvar = friendsErrorUnknown; break;
   }
+}
+
+void friendsClearError(friendsError *e)
+{
+  if (!e) return;
+
+  *e = friendsNoError;
 }

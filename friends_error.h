@@ -15,17 +15,18 @@
 
 /**
  * @macro friendsExpect
- * @brief よこした値が等しいかどうかを判定するのです。
+ * @brief よこした値が成り立っていることを前提とした最適化をできるよう
+ *        にするのです。
  * @param cond 条件式を入れるのです。
  * @param var  比較値を入れるのです。
  *
- * コンパイラが対応していれば、`cond` が常に真であることを期待して最適
- * 化を行うのです。
+ * コンパイラが対応していれば、`cond` が常に `var` であることを期待し
+ * て最適化を行うのです。
  */
 #ifdef __GNUC__
-#define friendsExpect(cond, var) (__builtin_expect((cond), (var)) == (var))
+#define friendsExpect(cond, var) (__builtin_expect((cond), (var)))
 #else
-#define friendsExpect(cond, var) ((cond) == (var))
+#define friendsExpect(cond, var) (cond)
 #endif
 
 /**
@@ -111,7 +112,7 @@ void friendsUnreachableImplement(const char *fname,
 #else
 #define friendsAssert(cond)                              \
   do {                                                   \
-    if (friendsExpect(!!(cond), 0))                       \
+    if (friendsExpect(!!(cond), 1) != 1)                 \
       friendsAssertImplement(#cond, FRIENDS_SOURCE_FILE, \
                              __LINE__, __func__);        \
   } while(0)
@@ -139,10 +140,10 @@ void friendsUnreachableImplement(const char *fname,
 void friendsSetErrorImplement(friendsError *errpvar, friendsError ev);
 
 #define friendsSetError(errpvar, esym)                  \
-  friendsSetErrorImplement(errpvar, friendsError##esym)
+  friendsSetErrorImplement((errpvar), friendsError##esym)
 
 #define friendsSetErrorV(errvar, esym)                  \
-  friendsSetErrorImplement(&errvar, friendsError##esym)
+  friendsSetErrorImplement(&(errvar), friendsError##esym)
 
 void friendsSetErrorFromErrno(friendsError *errpvar, int errn);
 
@@ -151,5 +152,7 @@ void friendsSetErrorFromErrno(friendsError *errpvar, int errn);
 
 #define friendsIsError(errvar, esym)            \
   ((errvar) == friendsError##esym)
+
+void friendsClearError(friendsError *e);
 
 #endif

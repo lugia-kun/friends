@@ -21,135 +21,168 @@
     }                                           \
   } while(0)
 
-int friendsUtf8ToFChar(friendsChar **b, const char *buf, friendsError *err)
+int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
+                            const char **buf, friendsError *err)
 {
-  int step;
-  int n, limit;
   const char *cur;
-  friendsChar *tmp;
-  friendsChar *p;
-
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-#else
-  friendsChar t;
-  const char *tok;
   const char *mrk;
+  int i;
+
+#ifndef FRIENDS_USE_UTF8_INTERNAL
+  friendsChar t;
 #endif
 
-  friendsAssert(b);
+  friendsAssert(fchar);
+  friendsAssert(buf);
+  friendsAssert(*buf);
+
+  fchar[0] = 0;
+  cur = *buf;
+
+  /*!re2c
+    re2c:define:YYCURSOR = "cur";
+    re2c:indent:top = 3;
+    re2c:indent:string = "  ";
+
+    * { friendsSetError(err, ILSEQ); goto error; }
+    "\x00" { goto end; }
+    [\U00010000-\U0010FFFF] { goto ok4; }
+    [\u0800-\uffff]         { goto ok3; }
+    [\u0080-\u07ff]         { goto ok2; }
+    [\u0001-\u007f]         { goto ok1; }
+  */
+
+  friendsUnreachable();
+
+ ok1:
+#ifndef FRIENDS_USE_UTF8_INTERNAL
+  fchar[0] = (unsigned char)**buf;
+  fchar[1] = 0;
+#endif
+  goto ok;
+
+ ok2:
+#ifndef FRIENDS_USE_UTF8_INTERNAL
+  mrk = *buf;
+  t = ((unsigned char)*mrk++) & 0x1f;
+  t = (t << 6) | (((unsigned char)*mrk) & 0x3f);
+  fchar[0] = t;
+  fchar[1] = 0;
+#endif
+  goto ok;
+
+ ok3:
+#ifndef FRIENDS_USE_UTF8_INTERNAL
+  mrk = *buf;
+  t = ((unsigned char)*mrk++) & 0x0f;
+  t = (t << 6) | (((unsigned char)*mrk++) & 0x3f);
+  t = (t << 6) | (((unsigned char)*mrk  ) & 0x3f);
+  fchar[0] = t;
+  fchar[1] = 0;
+#endif
+  goto ok;
+
+ ok4:
+#ifndef FRIENDS_USE_UTF8_INTERNAL
+  mrk = *buf;
+  t = ((unsigned char)*mrk++) & 0x07;
+  t = (t << 6) | (((unsigned char)*mrk++) & 0x3f);
+  t = (t << 6) | (((unsigned char)*mrk++) & 0x3f);
+  fchar[0] = 0xd800 | (((t >> 2) - 0x100) >> 2);
+  t = t & 0x0f;
+  t = (t << 6) | (((unsigned char)*mrk  ) & 0x3f);
+  fchar[1] = 0xdc00 | t;
+#endif
+  goto ok;
+
+ ok:
+#ifdef FRIENDS_USE_UTF8_INTERNAL /* Copy UTF-8. */
+  mrk = *buf;
+  for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
+    fchar[i] = *mrk;
+    mrk++;
+    if (mrk >= cur) {
+      if (i < FRIENDS_MAX_CHAR - 1) {
+        fchar[i + 1] = 0;
+      }
+      break;
+    }
+  }
+#endif
+  i = cur - *buf;
+  *buf = cur;
+  return i;
+
+ end:
+  return 0;
+
+ error:
+  return -1;
+}
+
+int friendsUtf8ToFChar(friendsChar **ret, const char *buf, friendsError *err)
+{
+  int n, limit;
+  int step, i;
+
+  const char *cur;
+  friendsChar *b;
+  friendsChar *t;
+  friendsChar fchar[FRIENDS_MAX_CHAR];
+
+  friendsAssert(ret);
   friendsAssert(buf);
 
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-  limit = 80;
-#else
-  limit = 40;
-#endif
+  limit = 80 / sizeof(friendsChar);
 
-  tmp = (friendsChar*)malloc(sizeof(friendsChar)*limit);
-  if (!tmp) { friendsSetError(err, NOMEM); return 2; }
+  b = (friendsChar *)malloc(sizeof(friendsChar) * limit);
+  if (!b) { friendsSetError(err, NOMEM); return -1; }
+  t = b;
 
   n = 0;
   for(step = 0; step < 2; ++step) {
     if (step) {
-      free(tmp);
-      tmp = (friendsChar*)malloc(sizeof(friendsChar)*n);
-      if (!tmp) { friendsSetError(err, NOMEM); return 2; }
+      free(b);
+      b = (friendsChar *)malloc(sizeof(friendsChar) * n);
+      if (!b) { friendsSetError(err, NOMEM); return -1; }
+      t = b;
       limit = n;
       n = 0;
     }
 
-    p = tmp;
-#ifdef FRIENDS_USE_UTF8_INTERNAL
-    cur = buf;
-    while(*b) {
-      if (n < limit) {
-        *p++ = *cur;
-      }
-      cur++;
-      n++;
-      friendsTestOverFlow(n);
-    }
-    if (n < limit) {
-      *p = '\0';
-    }
-    n++;
-
-#else
     cur = buf;
     for(;;) {
-      tok = cur;
-      /*!re2c
-        re2c:define:YYCURSOR = "cur";
-        re2c:indent:top = 3;
-        re2c:indent:string = "  ";
-
-        * { friendsSetError(err, ILSEQ); goto error; }
-        "\x00" {
-          if (n < limit) {
-            *p = 0;
-          }
-          n++;
-          friendsTestOverFlow(n);
-          break;
+      i = friendsOneUtf8ToFChar(fchar, &cur, err);
+      if (i < 0) { goto error; }
+      if (i == 0) {
+        if (limit - n > 0) {
+          *t++ = 0;
         }
-        [\U00010000-\U0010ffff] {
-          if (n + 1 < limit) {
-            t = ((unsigned char)*tok++) & 0x07;
-            t = (t << 6) | (((unsigned char)*tok++) & 0x3f);
-            t = (t << 6) | (((unsigned char)*tok++) & 0x3f);
-            *p++ = 0xd800 | (((t >> 2) - 0x100) >> 2);
-            t = t & 0x0f;
-            t = (t << 6) | (((unsigned char)*tok  ) & 0x3f);
-            *p++ = 0xdc00 | t;
-          }
-          n += 2;
-          friendsTestOverFlow(n);
-          continue;
+        n++;
+        friendsTestOverFlow(n);
+        break;
+      }
+      for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
+        if (fchar[i] == 0) break;
+        n++;
+        friendsTestOverFlow(n);
+      }
+      if (limit - n > 0) {
+        for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
+          if (fchar[i] == 0) break;
+          *t++ = fchar[i];
         }
-        [\u0800-\uffff] {
-          if (n < limit) {
-            t = ((unsigned char)*tok++) & 0x0f;
-            t = (t << 6) | (((unsigned char)*tok++) & 0x3f);
-            t = (t << 6) | (((unsigned char)*tok  ) & 0x3f);
-            *p++ = t;
-          }
-          n++;
-          friendsTestOverFlow(n);
-          continue;
-        }
-        [\u0080-\u07ff] {
-          if (n < limit) {
-            t = ((unsigned char)*tok++) & 0x3f;
-            t = (t << 6) | (((unsigned char)*tok) & 0x1f);
-            *p++ = t;
-          }
-          n++;
-          friendsTestOverFlow(n);
-          continue;
-        }
-        [\u0001-\u007f] {
-          if (n < limit) {
-            *p++ = (unsigned char)*tok;
-          }
-          n++;
-          friendsTestOverFlow(n);
-          continue;
-        }
-      */
-
-      friendsUnreachable();
+      }
     }
-#endif
-
     if (n <= limit) {
       break;
     }
   }
 
-  *b = tmp;
+  *ret = b;
   return n - 1;
 
  error:
-  free(tmp);
+  free(b);
   return -1;
 }
