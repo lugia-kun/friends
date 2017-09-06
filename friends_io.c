@@ -238,20 +238,20 @@ static void *friendsExtendBuffer(friendsChar **tbuf,
                                  size_t bufsz)
 {
   friendsChar *tmp;
+  friendsChar *obuf;
 
   friendsAssert(*tbuf);
   friendsAssert(*wptr);
   friendsAssert(*limp);
 
-  tmp = (friendsChar *)realloc(*tbuf, bufsz);
+  obuf = *tbuf;
+  tmp = (friendsChar *)realloc(obuf, sizeof(friendsChar) * bufsz);
   if (!tmp) {
     return NULL;
   }
-  if (*tbuf != tmp) {
-    *wptr = *wptr - *tbuf + tmp;
-  }
+  *wptr = *wptr - obuf + tmp;
   *tbuf = tmp;
-  *limp = *tbuf + bufsz;
+  *limp = tmp + bufsz;
   return tmp;
 }
 
@@ -268,7 +268,6 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
   char *cbuf;
   char *ret;
   const char *cur;
-  const char *mark;
   const char *cend;
   int iret;
   int i;
@@ -326,7 +325,6 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
     }
 
     cur = cbuf;
-    mark = NULL;
     while(cur < cend) {
       if (limp - wptr < FRIENDS_MAX_CHAR) {
         bufsz += bufsz_increment_size;
@@ -340,7 +338,6 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
       }
 
       e = friendsNoError;
-      mark = cur;
       iret = ccode->one_enc(wptr, &cur, &e);
       if (iret < 0) {
         if (!friendsIsError(e, ILSEQ)) {
@@ -363,23 +360,18 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
           free(tmp);
           cur++;
         } else {
-          cur = mark;
           offset = cmax - (cur - cbuf);
           break;
         }
-      } else if (iret == 0) {
-        friendsUnreachable();
       } else {
-        mark = NULL;
         offset = cmax - (cur - cbuf);
         wptr += iret;
-        if (wptr[-1] == 0x0a) {
+        if (iret == 0 || wptr[-1] == 0x0a) {
           wptr[0] = 0;
           goto end;
         }
       }
     }
-    if (feof(fp)) break;
     for (i = 0; i < cmax; ++i) {
       if (cur - cbuf >= cmax) break;
       cbuf[i] = *cur++;

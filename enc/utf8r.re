@@ -22,7 +22,7 @@
   } while(0)
 
 int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
-                            const char **buf, friendsError *err)
+                          const char **buf, friendsError *err)
 {
   const char *cur;
   const char *mrk;
@@ -58,6 +58,7 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
 #ifndef FRIENDS_USE_UTF8_INTERNAL
   fchar[0] = (unsigned char)**buf;
   fchar[1] = 0;
+  i = 1;
 #endif
   goto ok;
 
@@ -68,6 +69,7 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   t = (t << 6) | (((unsigned char)*mrk) & 0x3f);
   fchar[0] = t;
   fchar[1] = 0;
+  i = 1;
 #endif
   goto ok;
 
@@ -79,6 +81,7 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   t = (t << 6) | (((unsigned char)*mrk  ) & 0x3f);
   fchar[0] = t;
   fchar[1] = 0;
+  i = 1;
 #endif
   goto ok;
 
@@ -92,6 +95,7 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   t = t & 0x0f;
   t = (t << 6) | (((unsigned char)*mrk  ) & 0x3f);
   fchar[1] = 0xdc00 | t;
+  i = 2;
 #endif
   goto ok;
 
@@ -109,7 +113,6 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
     }
   }
 #endif
-  i = cur - *buf;
   *buf = cur;
   return i;
 
