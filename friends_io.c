@@ -232,15 +232,47 @@ int friendsPrintCF(FILE *fp, friendsError *err,
   return r;
 }
 
+static void *friendsExtendBuffer(friendsChar **tbuf,
+                                 friendsChar **wptr,
+                                 friendsChar **limp,
+                                 size_t bufsz)
+{
+  friendsChar *tmp;
+
+  friendsAssert(*tbuf);
+  friendsAssert(*wptr);
+  friendsAssert(*limp);
+
+  tmp = (friendsChar *)realloc(*tbuf, bufsz);
+  if (!tmp) {
+    return NULL;
+  }
+  if (*tbuf != tmp) {
+    *wptr = *wptr - *tbuf + tmp;
+  }
+  *tbuf = tmp;
+  *limp = *tbuf + bufsz;
+  return tmp;
+}
+
 int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
 {
+  enum { bufsz_increment_size = 16 / sizeof(friendsChar) };
   size_t bufsz;
   size_t offset;
-  size_t offdiff;
   const friendsCodeSet *ccode;
+  friendsChar *tbuf, *tmp;
+  friendsChar *wptr;
+  friendsChar *limp;
+  friendsChar  tcmp[FRIENDS_MAX_CHAR];
   char *cbuf;
   char *ret;
+  const char *cur;
+  const char *mark;
+  const char *cend;
   int iret;
+  int i;
+  int cmax;
   friendsError e;
 
   friendsAssert(buf);
@@ -254,48 +286,113 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
     err = &e;
   }
 
-  bufsz = 256;
-  offdiff = bufsz - 1;
-  offset = 0;
-  cbuf = (char *)calloc(sizeof(char), bufsz);
+  cmax = ccode->max();
+  cbuf = (char *)calloc(sizeof(char), cmax + 1);
   if (!cbuf) {
     friendsSetError(err, NOMEM);
     return -1;
   }
+  offset = 0;
+  cend = cbuf + cmax;
 
-  while(1) {
-    errno = 0;
-    cbuf[bufsz - 2] = '\0';
-    ret = fgets(cbuf + offset, bufsz - offset, fp);
-    friendsSetErrorFromErrno(err, errno);
-    if (ret == NULL || friendsAnyError(*err)) {
-      if (feof(fp)) {
-        break;
-      }
-      free(cbuf);
-      return -1;
-    }
-    cbuf[bufsz - 1] = '\0';
-    if (cbuf[bufsz - 2] == '\0' ||
-        cbuf[bufsz - 2] == '\n') {
-      break;
-    }
-    bufsz  += offdiff;
-    offset += offdiff;
-    ret = realloc(cbuf, bufsz);
-    if (!ret) {
-      friendsSetError(err, NOMEM);
-      free(cbuf);
-      return -1;
-    }
-    cbuf = ret;
-  }
-
-  iret = ccode->enc(buf, cbuf, err);
-  free(cbuf);
-  if (friendsAnyError(*err)) {
+  bufsz = 256 / sizeof(friendsChar);
+  tbuf = (friendsChar *)calloc(sizeof(friendsChar), bufsz);
+  if (!tbuf) {
+    free(cbuf);
+    friendsSetError(err, NOMEM);
     return -1;
   }
+  wptr = tbuf;
+  limp = tbuf + bufsz;
 
+  while(1) {
+    for (i = 0; i < offset; ++i) {
+      if (cbuf[i] == '\n') break;
+    }
+    if (i == offset) {
+      errno = 0;
+      ret = fgets(cbuf + offset, cmax - offset + 1, fp);
+      friendsSetErrorFromErrno(err, errno);
+      if (ret == NULL || friendsAnyError(*err)) {
+        if (ferror(fp)) {
+          free(cbuf);
+          free(tbuf);
+          return -1;
+        }
+        if (feof(fp) && cbuf[0] == 0) {
+          break;
+        }
+      }
+    }
+
+    cur = cbuf;
+    mark = NULL;
+    while(cur < cend) {
+      if (limp - wptr < FRIENDS_MAX_CHAR) {
+        bufsz += bufsz_increment_size;
+        tmp = friendsExtendBuffer(&tbuf, &wptr, &limp, bufsz);
+        if (!tmp) {
+          friendsSetError(err, NOMEM);
+          free(cbuf);
+          free(tbuf);
+          return -1;
+        }
+      }
+
+      e = friendsNoError;
+      mark = cur;
+      iret = ccode->one_enc(wptr, &cur, &e);
+      if (iret < 0) {
+        if (!friendsIsError(e, ILSEQ)) {
+          if (err) *err = e;
+          free(cbuf);
+          free(tbuf);
+          return -1;
+        }
+        if (cur == cbuf) {
+          iret = friendsUnescapeStringLiteral(&tmp, "\\ufffd", NULL);
+          if (iret < 0) {
+            if (err) *err = e;
+            free(cbuf);
+            free(tbuf);
+            return -1;
+          }
+          for (i = 0; tmp[i] != 0; ++i) {
+            *wptr++ = tmp[i];
+          }
+          free(tmp);
+          cur++;
+        } else {
+          cur = mark;
+          offset = cmax - (cur - cbuf);
+          break;
+        }
+      } else if (iret == 0) {
+        friendsUnreachable();
+      } else {
+        mark = NULL;
+        offset = cmax - (cur - cbuf);
+        wptr += iret;
+        if (wptr[-1] == 0x0a) {
+          wptr[0] = 0;
+          goto end;
+        }
+      }
+    }
+    if (feof(fp)) break;
+    for (i = 0; i < cmax; ++i) {
+      if (cur - cbuf >= cmax) break;
+      cbuf[i] = *cur++;
+    }
+    for (; i < cmax; ++i) {
+      cbuf[i] = 0;
+    }
+  }
+
+ end:
+  *buf = tbuf;
+  iret = wptr - tbuf;
+
+  free(cbuf);
   return iret;
 }
