@@ -17,6 +17,7 @@ function(add_friends_test NAME)
   add_test(NAME ${NAME} COMMAND $<TARGET_FILE:${NAME}>)
 endfunction()
 
+add_friends_test(friends_string string.c)
 add_friends_test(friends_list list.c)
 add_friends_test(friends_set  set.c)
 add_friends_test(friends_encoding encoding.c)

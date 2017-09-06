@@ -95,7 +95,8 @@ int friendsTestErrorCount(void);
  * @param object 調べるものをよこすのです。
  * @param except 正しい値をよこすのです。
  *
- * この関数は friendsChar* 専用で、正しい値を C の文字列で書きたいときに使うのです。
+ * この関数は friendsChar* 専用で、正しい値を C の文字列で書きたいとき
+ * に使うのです。
  */
 #define friendsTestExpectText(object, expect)                       \
   friendsTestExpectTextImplement((object), (expect),                \

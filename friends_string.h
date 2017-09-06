@@ -86,6 +86,25 @@ size_t friendsStringCharCount(const friendsChar *start,
                               friendsError *err);
 
 /**
+ * @brief 数値で書かれた文字列を数値に変換するのです。
+ * @param test 変換する文字列をよこすのです。
+ * @param end NULL でなければ、変換できた文字の最後を書き込むのです。
+ * @param base 基数をよこすのです。
+ * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 変換した値を返すのです。エラーの時は LONG_MIN を返すのです。
+ *
+ * この関数は strtol の Friends 版なのです。基数は 2 から 36 まで指定
+ * できるのです。
+ *
+ * 日本語なプログラムなので、全角の使用を許しているのです。ただし、負
+ * 符号には、全角ハイフン「－」(U+FF0D) マイナス (U+2212) だけを許して
+ * いるのです。長音記号「ー」(U+30FC)、ダッシュ「―」(U+2015) ではダメ
+ * ですよ。
+ */
+long int friendsStringToLong(const friendsChar *text, const friendsChar **end,
+                             int base, friendsError *err);
+
+/**
  * @brief C 言語の文字列定数をフレンズ用の文字列に変換するのです。
  * @param output ポインタの出力先のをよこすのです。
  * @param input  入力文字列をよこすのです。

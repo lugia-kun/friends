@@ -22,7 +22,7 @@ const friendsPropositionData *friendsGetProposition(friendsData *d);
  * @param verb 述語をよこすのです。
  * @param arguments 引数のリストをよこすのです。
  * @param condition 条件のリストをよこすのです。
- * @param stop 検索する時に、この文で止めるなら、friendsTrue をよこすのです。
+ * @param mode この命題をどう扱うかを指定するのです。
  * @param err NULL でない値をよこしてくれたなら、そこにエラーの情報を書き込むのです。
  * @return 成功した時は dest、失敗した時は NULL を返すのです。
  *
@@ -36,7 +36,7 @@ const friendsPropositionData *friendsGetProposition(friendsData *d);
 friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
                                    friendsDataList *arguments,
                                    friendsDataList *conditions,
-                                   friendsBool stop,
+                                   friendsPropositionMode mode,
                                    friendsError *err);
 
 /**
@@ -63,6 +63,13 @@ friendsDataList *friendsPropositionConditions(const friendsPropositionData *p);
  * @return 停止条件かどうかを返すのです。
  */
 friendsBool friendsPropositionIsStop(const friendsPropositionData *p);
+
+/**
+ * @brief 質問文かを得るのです。
+ * @param p 命題データをよこすのです。
+ * @return 疑問文かどうかを返すのです。
+ */
+friendsBool friendsPropositionIsQuery(const friendsPropositionData *p);
 
 /**
  * @brief 述語を得るのです。

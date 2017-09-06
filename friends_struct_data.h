@@ -55,17 +55,12 @@ struct friendsVariableDataT {
   friendsBool tail;
 };
 
-struct friendsArgumentDataT {
-  friendsData *variable;     /*!< 変数またはアトム、またはそのリスト */
-  friendsChar *particle;     /*!< 助詞 */
-};
-
 struct friendsPropositionDataT
 {
   friendsDataList *conditions; /*!< 前提条件 */
   friendsDataList *arguments;  /*!< パラメータのリスト */
   friendsChar *verb;           /*!< 述語 */
-  friendsBool  stop;           /*!< たーのしー！ */
+  friendsPropositionMode mode; /*!< モード */
 };
 
 struct friendsMatchDataT
@@ -84,6 +79,7 @@ struct friendsParkT
   friendsDataSet  *friends;    /*!< 命題のリスト（述語ごとに区分け） */
   friendsDataSet  *atoms;
   friendsDataList *alloc_table;
+  friendsParser *parser;
   friendsBool deleting;
 };
 
@@ -92,18 +88,23 @@ struct friendsLineColumnT {
   long column;
 };
 
-struct friendsTokenT
+struct friendsTokenDataT
 {
   friendsChar *token;
-  int tokenType;
-
+  int token_type;
+  friendsLineColumn lc;
 };
 
 struct friendsParserT
 {
+  friendsPark *park;
   void *parserData;
-  friendsDataList *buffer_list;
-  friendsDataList *bufp;
+  friendsDataList *buffer_list; /*!< 文字列のリスト */
+  friendsDataList *tokens;
+  friendsDataList *listcur;
+  friendsDataList *parsed_data;
+  size_t bufp_size;
+  friendsChar *bufp;
   const friendsChar *cur;
   const friendsChar *mark;
   const friendsChar *cmark;
@@ -112,9 +113,12 @@ struct friendsParserT
   const friendsChar *stoken;
   friendsLineColumn curpos;
   friendsLineColumn tokpos;
-  friendsFillFunc *fill;
-  friendsPark *park;
-  friendsError *err;
+  enum {
+    friendsLexerNORMAL, friendsLexerPAREN, friendsLexerDBRACKET,
+    friendsLexerUNDERSCORE,
+  } lexer_state;
+  int last_type;
+  friendsError err;
 };
 
 #endif /* FRIENDS_STRUCT_DATA_H */

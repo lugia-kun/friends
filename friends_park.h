@@ -89,19 +89,19 @@ friendsDataList *friendsPropositionListInPark(friendsPark *park,
                                               const friendsChar *verb);
 
 /**
- * @brief フレンズ言語を解読する装置を得るのです。
+ * @brief フレンズ言語を解読する装置を作るのです。
  * @param park パークをよこすのです。
  * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return 解読装置を返すのです。作成に失敗した時は、NULL を返すのです。
  *
  * パークの中になかったら、新しく作るのです。
  *
- * 返したポインタは、friendsDeletePark か friendsResetParser を呼び出
+ * 返したポインタは、friendsDeletePark か friendsDeleteParser を呼び出
  * すまで使えるのです。
  *
  * フレンズ言語の解読の仕方を説明するのです。
  *
- * 1. まず、この関数を使ってパークにある解読装置を得るのです。
+ * 1. まず、この関数を使って解読装置を得るのです。
  *
  * 2. 適当な長さの文字列を読み込んで、friendsAppendParseText 関数で解
  *    読装置にセットするのです。
@@ -114,7 +114,7 @@ friendsDataList *friendsPropositionListInPark(friendsPark *park,
  *
  * * エラーの時は、friendsResetParser 関数でリセットできるのです。こ
  *   の時、読みかけの情報は捨てられてしまうのです。リセットした後は、
- *   1. からやり直すのです。
+ *   2. からやり直すのです。
  *
  * * 3. で、「続きが必要」と言われたときも、4. は実行しておくと良いのです。
  */

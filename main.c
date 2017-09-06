@@ -13,7 +13,13 @@
 
 int main(int argc, char **argv)
 {
+  friendsChar *t;
   friendsError e;
-  friendsSetErrorV(e, NOMEM);
+
+  friendsPrintCF(stdout, &e, "> ");
+  friendsGetLine(&t, stdin, &e);
+  friendsPrintCF(stdout, &e, "%ls", t);
+
+  free(t);
   return 0;
 }

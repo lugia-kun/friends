@@ -5,63 +5,221 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "friends_data.h"
 #include "friends_struct_data.h"
 #include "friends_lexer.h"
 #include "friends_error.h"
 #include "friends_string.h"
 #include "friends_grammer.h"
+#include "friends_list.h"
+#include "friends_token.h"
 
-/* provided by lemon paraser generator. */
-void *friendsParserCoreAlloc(void *(*allocator)(size_t));
-void friendsParserCoreFree(void *parser, void (*deallocator)(void *));
-void friendsParserCore(void *parser, int token, friendsParser *p);
+/*!re2c
+  re2c:define:YYCTYPE = "friendsChar";
+*/
 
-#define Parse(token)                                        \
-  do {                                                      \
-    ttype = friends##token;                                 \
-    friendsParserCore(p.parserData, ttype, &p);             \
-  } while(0)
+static void friendsLexerFill(friendsParser *p, size_t reqs) {
+  size_t uses;
+  size_t c;
+  const friendsChar *lexeme;
+  const friendsChar *t;
+  friendsChar *newp;
+  friendsDataList *ep;
 
-void friendsParse(friendsPark *park, const friendsChar *str,
-                  friendsFillFunc *fillfunc, void *fillarg,
-                  friendsError *err)
-{
-  friendsParser p;
-  int ttype = 0;
-  memset(&p, 0, sizeof(friendsParser));
+  lexeme = NULL;
 
-  friendsAssert(park);
-  friendsAssert(str || fillfunc);
+  if (p->bufp) {
+    friendsAssert(p->listcur);
+    p->listcur = friendsListNext(p->listcur);
 
-  if (fillfunc) {
-    p.fill = fillfunc;
-    p.fill(&p, 1024, fillarg);
-  } else if (str) {
-    p.cur = str;
-    p.limit = str + friendsStringArrayLength(str);
+    lexeme = p->cur;
+    if (p->token  && p->token < lexeme)  lexeme = p->token;
+    if (p->stoken && p->stoken < lexeme) lexeme = p->stoken;
+    if (p->mark   && p->mark < lexeme) lexeme = p->mark;
+    if (p->cmark  && p->cmark < lexeme) lexeme = p->cmark;
+
+    uses = friendsStringArrayLength(lexeme);
+
+  } else {
+    /* 初期化するのです */
+    if (!p->listcur) {
+      p->listcur = friendsListBegin(p->buffer_list);
+    }
+
+    uses = 0;
   }
 
-  p.parserData = friendsParserCoreAlloc(malloc);
-  if (!p.parserData) {
-    friendsSetError(err, NOMEM);
-    return;
+  /* もうこれ以上読み込めるデータは無いのです。 */
+  if (!p->listcur) return;
+
+  ep = p->listcur;
+
+  c = 0;
+  for (; ep; ep = friendsListNext(ep)) {
+    t = (const friendsChar *)friendsListData(ep);
+    c += friendsStringArrayLength(t);
+    if (c >= reqs) break;
+  }
+
+  reqs = uses;
+  reqs += c;
+  reqs += 1; /* For NUL. */
+  if (reqs >= p->bufp_size) {
+    newp = (friendsChar *)calloc(sizeof(friendsChar), reqs);
+    if (!newp) {
+      friendsSetErrorV(p->err, NOMEM);
+      return;
+    }
+  } else {
+    newp = p->bufp;
+  }
+  if (lexeme && lexeme != newp) {
+    memmove(newp, lexeme, sizeof(friendsChar) * uses);
+    uses = uses + 1;
+  }
+  while (1) {
+    if (!p->listcur) break;
+    t = (const friendsChar *)friendsListData(p->listcur);
+
+    friendsCopyString(newp + uses, t);
+    uses += friendsStringArrayLength(t);
+
+    if (p->listcur == ep) break;
+    p->listcur = friendsListNext(p->listcur);
+  }
+  newp[uses] = 0;
+
+  p->limit = newp + uses;
+  if (p->token)  p->token = newp + (p->token - lexeme);
+  if (p->stoken) p->stoken = newp + (p->stoken - lexeme);
+  if (p->mark)   p->mark = newp + (p->mark - lexeme);
+  if (p->cmark)  p->cmark = newp + (p->cmark - lexeme);
+
+  if (newp != p->bufp) {
+    free(p->bufp);
+  }
+  p->bufp = newp;
+  p->bufp_size = reqs;
+}
+
+static void friendsLexerAddToken(friendsParser *p, int type)
+{
+  size_t n;
+  friendsChar *ch;
+  friendsData *d, *ret;
+  friendsDataList *l;
+
+  friendsAssert(p);
+  friendsAssert(p->park);
+  friendsAssert(p->token);
+  friendsAssert(p->cur);
+
+  if (type >= 0) {
+    p->last_type = type;
+    d = friendsNewData(p->park, &p->err);
+    if (!d) return;
+
+    n = friendsStringDuplicate(&ch, p->token, p->cur, &p->err);
+    if (n == (size_t)-1) return;
+
+    ret = friendsSetToken(d, ch, type, p->tokpos.line, p->tokpos.column,
+                          &p->err);
+    if (!ret) {
+      free(ch);
+      return;
+    }
+
+    l = friendsListAppend(p->tokens, d, &p->err);
+    if (!l) return;
+  }
+  p->token = NULL;
+}
+
+static void friendsLexerControlPos(friendsParser *p, friendsBool newline)
+{
+  const friendsChar *start;
+  const friendsChar *YYCURSOR;
+  size_t n;
+
+  if (newline == friendsTrue) {
+    while (YYCURSOR < p->cur) {
+      /*!re2c
+        re2c:yyfill:enable = 0;
+
+        *    { continue; }
+        "\n" { start = YYCURSOR; p->curpos.line += 1; continue; }
+      */
+      friendsUnreachable();
+    }
+    p->curpos.column = 0;
+  } else {
+    start = p->token;
+  }
+  n = friendsStringCharCount(start, p->cur, NULL);
+  p->curpos.column += n;
+}
+
+static void friendsLexerSetTokenPos(friendsParser *p)
+{
+  p->tokpos = p->curpos;
+}
+
+#define AddToken(token)                         \
+  friendsLexerAddToken(p, friends##token)
+
+#define SkipToken()                             \
+  friendsLexerAddToken(p, -1)
+
+#define IncrementLine() \
+  friendsLexerControlPos(p, friendsTrue)
+
+#define IncrementPos() \
+  friendsLexerControlPos(p, friendsFalse)
+
+void friendsLex(friendsParser *p)
+{
+  int ttype = 0;
+
+  friendsAssert(p);
+  friendsAssert(p->buffer_list);
+
+  if (!p->bufp) {
+    friendsLexerFill(p, 1);
+  }
+
+  /* エラー復帰時は、トークンの場所から読み直すのです */
+  if (p->token) {
+    p->cur = p->token;
   }
 
   for(;;) {
-    p.token = p.cur;
+    p->mark  = NULL;
+    p->cmark = NULL;
+
+    switch(p->lexer_state) {
+    case friendsLexerNORMAL:     break;
+    case friendsLexerUNDERSCORE: goto und;
+    case friendsLexerDBRACKET:   goto Dcl_continue;
+    case friendsLexerPAREN:      goto Pcl_continue;
+    default: friendsUnreachable();
+    }
+
+    p->token = p->cur;
+    friendsLexerSetTokenPos(p);
 
     /*!re2c
       re2c:define:YYCTYPE = "friendsChar";
-      re2c:define:YYCURSOR = "p.cur";
-      re2c:define:YYMARKER = "p.mark";
-      re2c:define:YYCTXMARKER = "p.cmark";
-      re2c:define:YYLIMIT = "p.limit";
+      re2c:define:YYCURSOR = "p->cur";
+      re2c:define:YYMARKER = "p->mark";
+      re2c:define:YYCTXMARKER = "p->cmark";
+      re2c:define:YYLIMIT = "p->limit";
       re2c:define:YYFILL:naked = 1;
-      re2c:define:YYFILL = "{ if(p.fill) p.fill(&p, @@, fillarg); }";
+      re2c:define:YYFILL = "{ friendsLexerFill(p, @@); }";
+      re2c:yyfill:enable = 1;
       re2c:indent:string = "  ";
       re2c:indent:top = 2;
 
-      utf8     = [\u0020-\U0010ffff];
+      utf8     = [\u0020-\uffef\U00010000-\U0010ffff];
       u_ascii  = [\u0022-\u0027\u002a\u002b\u002d-\u003e\u0040-\u007e];
       u_noncjk = [\u00a1-\u2fff\ua000-\uf8ff\ufb00-\ufb4f\ufe70-\ufeff];
       u_extra  = [\U00010000-\U0010ffff];
@@ -82,10 +240,12 @@ void friendsParse(friendsPark *park, const friendsChar *str,
 
       end = "\x00";
       brackets = (_Kop|_Kcl|_Pop|_Pcl|_Dop|_Dcl);
-      ws = [\t ,\u00a0\u3001\u3000\uff0c\uff64]; // 、，（全角SP）
+      ws = [\t \u00a0\u3000];        // 全角SP
+      comma = [,\u3001\uff0c\uff64]; // 、，
       wss = ws+;
       nl = ("\n" | "\r\n" | "\r");
-      sep = (wss|brackets|nl|end);
+      ssep = (nl|wss|brackets|end);
+      csep = (ssep|comma+);
 
       Dakuten = [\u3099\u309b];
       H_A  =  "\u3042"; // あ
@@ -96,8 +256,10 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       H_Gi = ("\u304e" | "\u304d" Dakuten); // ぎ
       H_Ke =  "\u3051"; // け
       H_Ko =  "\u3053"; // こ
+      H_Go = ("\u3054" | "\u3053" Dakuten); // ご
       H_Si =  "\u3057"; // し
       H_Ji = ("\u3058" | "\u3057" Dakuten); // じ
+      H_Su =  "\u3059"; // す
       H_So =  "\u305d"; // そ
       H_Ta =  "\u305f"; // た
       H_Da = ("\u3060" | "\u305f" Dakuten); // だ
@@ -130,7 +292,7 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       K_N  =  "\u30f3"; // ン
       ____ = [\u30fc\uff0d]; // ー (+ 全角ハイフン）
 
-      Waai     = H_Wa ____ H_I  _Exc;           // わーい！
+      Sugoi    = H_Su H_Go ____ H_I  _Exc;      // すごーい！
       Friends  = K_Fu K_Re K_N  K_Zu;           // フレンズ
       Nandane  = H_Na H_N  H_Da H_Ne _Exc;      // なんだね！
       Nandakke = H_Na H_N  H_Da H_tu H_Ke _Que; // なんだっけ？
@@ -158,62 +320,103 @@ void friendsParse(friendsPark *park, const friendsChar *str,
       Toka = H_To H_Ka; // とか
       Tsugi = (H_Tu H_Gi | "\u6b21"); // つぎ | 次
 
-      * { friendsSetError(err, ILSEQ); break; }
-      end { Parse(END); break; }
+      De = H_De; // で
+      Nara = H_Na H_Ra; // なら
 
-      nl  { continue; }
-      wss { continue; }
+      *   { friendsSetErrorV(p->err, ILSEQ); goto end; }
+      end { goto end; }
 
-      Waai    /sep { Parse(WAAI); continue; }
-      Nandane /sep { Parse(NANDANE); continue; }
-      Nandakke/sep { Parse(NANDAKKE); continue; }
-      No/sep       { Parse(NO); continue; }
-      Tanoshi/sep  { Parse(TANOSHI); continue; }
-      Tsugi/sep    { Parse(TSUGI); continue; }
-      Friends/sep  { Parse(FRIEND); continue; }
-      Toka/sep     { Parse(TOKA); continue; }
+      nl     { IncrementLine(); continue; }
+      wss    { IncrementPos(); continue; }
+      comma+ { IncrementPos(); continue; }
+
+      Sugoi/ssep    { IncrementPos(); AddToken(SUGOI); continue; }
+      Nandane/ssep  { IncrementPos(); AddToken(NANDANE); continue; }
+      Nandakke/ssep { IncrementPos(); AddToken(NANDAKKE); continue; }
+      Tanoshi/ssep  { IncrementPos(); AddToken(TANOSHI); continue; }
+      No/csep       { IncrementPos(); goto may_no; }
+      Tsugi/csep    { IncrementPos(); AddToken(TSUGI); continue; }
+      Friends/csep  { IncrementPos(); AddToken(FRIEND); continue; }
+      Toka/csep     { IncrementPos(); AddToken(TOKA); continue; }
+      De/csep       { IncrementPos(); goto may_and; }
+      Nara/csep     { IncrementPos(); goto may_then; }
 
       (Anata|Kimi|Kare|Kanojo|Dare|Nani|Are|Kore|Korera|
-       Sore|Sorera|Koko|Soko|Asoko|Doko|Dore)/sep
-                        { Parse(VARIABLE); continue; }
+       Sore|Sorera|Koko|Soko|Asoko|Doko|Dore)/csep
+                     { IncrementPos(); AddToken(VARIABLE); continue; }
 
-      _Und          { goto und; }
-      _Kop          { Parse(LKAGI); continue; }
-      _Kcl          { Parse(RKAGI); continue; }
-      _Pop          { ttype = friendsATOM; goto Pcl; }
-      _Dop          { ttype = friendsATOM; goto Dcl; }
-      atomchar+/sep { goto general_token; }
+      _Und           { IncrementPos(); goto und; }
+      _Kop           { IncrementPos(); AddToken(LKAGI); continue; }
+      _Kcl           { IncrementPos(); AddToken(RKAGI); continue; }
+      _Pop           { IncrementPos(); ttype = friendsATOM; goto Pcl; }
+      _Dop           { IncrementPos(); ttype = friendsATOM; goto Dcl; }
+      atomchar+/csep { IncrementPos(); goto general_token; }
     */
 
     friendsUnreachable();
 
+  may_no:
+    switch (p->last_type) {
+    case friendsATOM:
+    case friendsVARIABLE:
+    case friendsTSUGI:
+    case friendsRKAGI:
+      AddToken(NO);
+      break;
+    default:
+      goto general_token;
+      break;
+    }
+    continue;
+
+  may_and:
+    switch (p->last_type) {
+    case friendsFRIEND:
+      AddToken(AND);
+      break;
+    default:
+      goto general_token;
+    }
+    continue;
+
+  may_then:
+    switch (p->last_type) {
+    case friendsFRIEND:
+      AddToken(THEN);
+      break;
+    default:
+      goto general_token;
+    }
+    continue;
+
   general_token:
-    switch (ttype) {
+    switch (p->last_type) {
     case friendsATOM:
     case friendsVARIABLE:
     case friendsTSUGI:
     case friendsTOKA:
     case friendsRKAGI:
-      Parse(PARTICLE);
+      AddToken(PARTICLE);
       break;
     default:
-      Parse(ATOM);
+      AddToken(ATOM);
       break;
     }
     continue;
 
   und:
     ttype = friendsVARIABLE;
-    p.token = p.cur;
+    p->lexer_state = friendsLexerUNDERSCORE;
+    p->token = p->cur;
 
     /*!re2c
-      re2c:indent:top = 3;
-
-      * { friendsSetError(err, ILSEQ); break; }
+      * { friendsSetErrorV(p->err, ILSEQ); goto end; }
+      end  { goto end; }
       _Pop { goto Pcl; }
       _Dop { goto Dcl; }
-      atomchar+/(wss|nl) {
-        friendsParserCore(p.parserData, ttype, &p);
+      atomchar+/csep {
+        IncrementPos();
+        friendsLexerAddToken(p, ttype);
         continue;
       }
      */
@@ -221,36 +424,46 @@ void friendsParse(friendsPark *park, const friendsChar *str,
     friendsUnreachable();
 
   Pcl:
-    p.token = p.cur;
+    p->token = p->cur;
+  Pcl_continue:
     for (;;) {
-      p.stoken = p.cur;
+      p->stoken = p->cur;
       /*!re2c
-       * { friendsSetError(err, ILSEQ); break; }
-       _Pcl { break; }
-       utf8 { continue; }
+        re2c:indent:top = 3;
+
+        * { friendsSetErrorV(p->err, ILSEQ); goto end; }
+        end  { goto end; }
+        _Pcl { break; }
+        utf8 { continue; }
       */
     }
     goto bracket;
 
   Dcl:
-    p.token = p.cur;
+    p->token = p->cur;
+  Dcl_continue:
     for (;;) {
-      p.stoken = p.cur;
+      p->stoken = p->cur;
       /*!re2c
-       * { friendsSetError(err, ILSEQ); break; }
-       _Dcl { break; }
-       utf8 { continue; }
+        re2c:indent:top = 3;
+
+        * { friendsSetErrorV(p->err, ILSEQ); goto end; }
+        end  { goto end; }
+        _Dcl { break; }
+        utf8 { continue; }
       */
     }
     goto bracket;
 
   bracket:
-    p.mark = p.cur;
-    p.cur = p.stoken;
-    friendsParserCore(p.parserData, ttype, &p);
-    p.cur = p.mark;
+    p->mark = p->cur;
+    p->cur = p->stoken;
+    friendsLexerAddToken(p, ttype);
+    p->cur = p->mark;
+    p->stoken = NULL;
+    p->mark = NULL;
     continue;
   }
 
-  friendsParserCoreFree(p.parserData, free);
+ end: /* No postactions here. */;
 }

@@ -79,39 +79,6 @@ friendsBool friendsPropositionMatch(friendsPark *park,
   friendsAssert(target);
   friendsAssert(match_list);
 
-  qp = friendsGetProposition(query);
-  tp = friendsGetProposition(target);
-  if (!qp || !tp) {
-    friendsSetError(e, InvalidType);
-    return friendsFalse;
-  }
-
-  qargs = friendsPropositionArguments(query);
-  targs = friendsPropositionArguments(target);
-
-  if (!qargs || !targs) return friendsFalse;
-
-  retl = friendsNewList(e);
-  if (!retl) return friendsFalse;
-
-  /* ---- goto error if error below here ---- */
-  lq = friendsListBegin(qargs);
-  lt = friendsListBegin(targs);
-  while (1) {
-    qd = friendsListData(lq);
-    td = friendsListData(lt);
-    qt = friendsGetType(qd);
-    tt = friendsGetType(td);
-    if (qt == friendsEtcetra && tt == friendsEtcetra) {
-      dd = friendsNewData(park, e);
-      if (!dd) goto error;
-    }
-  lend:
-    if (lq) lq = friendsListNext(lq);
-    if (lt) lt = friendsListNext(lt);
-    if (!lq && !lt) break;
-  }
-
   return result;
 
  error:

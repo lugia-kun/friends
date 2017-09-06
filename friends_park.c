@@ -9,6 +9,7 @@
 #include "friends_list.h"
 #include "friends_data.h"
 #include "friends_atom.h"
+#include "friends_parser.h"
 
 friendsPark *friendsNewPark(friendsError *e)
 {
@@ -24,6 +25,7 @@ friendsPark *friendsNewPark(friendsError *e)
   p->atoms   = friendsNewSet(e);
   p->friends = friendsNewSet(e);
   p->deleting = friendsFalse;
+  p->parser = NULL;
 
   if (!(p->atoms && p->friends)) {
     friendsDeleteSet(p->atoms);
@@ -197,4 +199,26 @@ friendsDataList *friendsPropositionListInPark(friendsPark *park,
   friendsAssert(verb);
 
   return friendsSetFindText(park->friends, friendsProposition, verb);
+}
+
+
+friendsParser *friendsGetParser(friendsPark *park, friendsError *err)
+{
+  friendsAssert(park);
+
+  if (park->parser) return park->parser;
+
+  park->parser = friendsNewParser(park, err);
+  return park->parser;
+}
+
+friendsParser *friendsResetParser(friendsPark *park, friendsError *err)
+{
+  friendsAssert(park);
+
+  if (!park->parser) return NULL;
+
+  friendsDeleteParser(park->parser);
+  park->parser = friendsNewParser(park, err);
+  return park->parser;
 }

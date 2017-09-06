@@ -3,16 +3,20 @@
 #include "friends_struct_data.h"
 #include "friends_data.h"
 #include "friends_error.h"
-#include "friends_atom.h"
-#include "friends_variable.h"
 #include "friends_list.h"
-#include "friends_string.h"
+#include "friends_parser_implement.h"
 
 #ifdef assert
 #undef assert
 #endif
 
 #define assert friendsAssert
+
+typedef struct {
+  friendsDataList *list;
+  friendsData *verb;
+} friendsPartData;
+
 }
 
 %extra_argument { friendsParser *p }
@@ -25,109 +29,239 @@ statements ::= statements statement.
 statement ::= friend_define.
 statement ::= friend_ask.
 
-friend_define ::= WAAI friend_part NANDANE.
-friend_define ::= WAAI friend_part NANDANE TANOSHI.
-friend_define ::= WAAI conditionals friend_part NANDANE.
-friend_define ::= WAAI conditionals friend_part NANDANE TANOSHI.
+friend_define ::= SUGOI friend_part(A) NANDANE. {
+  friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
+                                 A.verb, friendsPropositionNormal, &p->err);
+}
 
-friend_ask ::= friend_part NANDAKKE.
-friend_ask ::= conditionals friend_part NANDAKKE.
+friend_define ::= SUGOI friend_part(A) NANDANE TANOSHI. {
+  friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
+                                 A.verb, friendsPropositionStop, &p->err);
+}
 
-conditionals ::= conditionals friend_part THEN.
-conditionals ::= friend_part THEN.
+friend_define ::= SUGOI conditionals(A) THEN friend_part(B) NANDANE. {
+  friendsParserInsertProposition(p->parsed_data, p->park, A, B.list,
+                                 B.verb, friendsPropositionNormal, &p->err);
+}
 
-friend_part ::= complete_list FRIEND_NAME FRIEND.
+friend_define ::= SUGOI conditionals(A) THEN friend_part(B) NANDANE TANOSHI. {
+  friendsParserInsertProposition(p->parsed_data, p->park, A, B.list,
+                                 B.verb, friendsPropositionNormal, &p->err);
+}
+
+friend_ask ::= friend_part(A) NANDAKKE. {
+  friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
+                                 A.verb, friendsPropositionQuery, &p->err);
+}
+
+friend_ask ::= conditionals(A) THEN friend_part(B) NANDAKKE. {
+  friendsParserInsertProposition(p->parsed_data, p->park, A, B.list,
+                                 B.verb, friendsPropositionQuery, &p->err);
+}
+
+conditionals(A) ::= friend_part(B). {
+  friendsDataList *l, *lp;
+  friendsData *prop;
+  l = NULL;
+  lp = NULL;
+  if (B.list && B.verb) {
+    prop = friendsParserCreateProposition(p->park, NULL, B.list,
+                                          B.verb, friendsPropositionNormal,
+                                          &p->err);
+    if (prop) {
+      lp = friendsNewList(&p->err);
+      if (lp) {
+        l = friendsListAppend(l, prop, &p->err);
+      }
+    }
+  }
+  if (l) {
+    A = lp;
+  } else {
+    A = NULL;
+    friendsDeleteList(lp);
+  }
+}
+
+conditionals(A) ::= conditionals(B) AND friend_part(C). {
+  friendsDataList *l;
+  friendsData *prop;
+  l = NULL;
+  if (B && C.list && C.verb) {
+    prop = friendsParserCreateProposition(p->park, NULL, C.list,
+                                          C.verb, friendsPropositionNormal,
+                                          &p->err);
+    if (prop) {
+      l = friendsListAppend(B, prop, &p->err);
+    }
+  }
+  if (l) {
+    A = B;
+  } else {
+    A = NULL;
+    friendsDeleteList(B);
+  }
+}
+
+friend_part(A) ::= complete_list(B) FRIEND_NAME(C) FRIEND. {
+  A.list = B;
+  A.verb = C;
+}
 
 complete_list(A) ::= list(B) PARTICLE. { A = B; }
 complete_list(A) ::= list(B) PARTICLE VARIABLE(C) TOKA PARTICLE. {
-  friendsData *d;
-  d = friendsNewData(p->park, p->err);
-  friendsSetVariable(d, C, friendsTrue, p->err);
-  A = B;
+  friendsData *var;
+  friendsDataList *l;
+  l = NULL;
+  var = NULL;
+  if (B && C) {
+    var = friendsParserCreateVariable(p->park, C, friendsTrue, &p->err);
+    if (var) {
+      l = friendsListAppend(B, var, &p->err);
+    }
+  }
+  if (l) {
+    A = B;
+  } else {
+    A = NULL;
+    friendsDeleteList(B);
+  }
 }
 
 list(A) ::= term(B). {
-  A = friendsNewList(p->err);
-  friendsListAppend(A, B, p->err);
+  friendsDataList *l;
+  A = friendsNewList(&p->err);
+  if (A && B) {
+    l = friendsListAppend(A, B, &p->err);
+  }
+  if (!l) {
+    friendsDeleteList(A);
+    A = NULL;
+  }
 }
 
 list(A) ::= list(B) PARTICLE term(C). {
-  A = B;
-  friendsListAppend(A, C, p->err);
+  friendsDataList *l;
+  l = NULL;
+  if (B && C) {
+    l = friendsListAppend(B, C, &p->err);
+  }
+  if (l) {
+    A = B;
+  } else {
+    A = NULL;
+    friendsDeleteList(B);
+  }
 }
 
 term(A) ::= ATOM(B). {
-  A = friendsNewData(p->park, p->err);
-  friendsSetTextAtom(A, B, p->err);
+  friendsData *atom;
+  atom = NULL;
+  if (B) {
+    atom = friendsParserCreateAtom(p->park, friendsNumericAtom, B, &p->err);
+  }
+  A = atom;
+}
+
+term(A) ::= TSUGI(B). {
+  friendsData *atom;
+  atom = NULL;
+  if (B) {
+    atom = friendsParserCreateAtom(p->park, friendsTextAtom, B, &p->err);
+  }
+  A = atom;
 }
 
 term(A) ::= VARIABLE(B). {
-  A = friendsNewData(p->park, p->err);
-  friendsSetVariable(A, B, friendsFalse, p->err);
+  friendsData *var;
+  var = NULL;
+  if (B) {
+    var = friendsParserCreateVariable(p->park, B, friendsFalse, &p->err);
+  }
+  A = var;
 }
 
 term(A) ::= LKAGI list(B) RKAGI. {
-  A = friendsNewData(p->park, p->err);
-  friendsSetList(A, B, p->err);
+  friendsData *d;
+  d = NULL;
+  if (B) {
+    d = friendsParserCreateListTerm(p->park, B, NULL, &p->err);
+  }
+  A = d;
+  if (!d) {
+    friendsDeleteList(B);
+  }
 }
 
 term(A) ::= LKAGI list(B) PARTICLE RKAGI. {
-  A = friendsNewData(p->park, p->err);
-  friendsSetList(A, B, p->err);
+  friendsData *d;
+  d = NULL;
+  if (B) {
+    d = friendsParserCreateListTerm(p->park, B, NULL, &p->err);
+  }
+  A = d;
+  if (!d) {
+    friendsDeleteList(B);
+  }
 }
 
 term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA RKAGI. {
-  A = friendsNewData(p->park, p->err);
-  friendsSetVariable(A, C, friendsTrue, p->err);
-  friendsListAppend(B, A, p->err);
-  A = friendsNewData(p->park, p->err);
-  friendsSetList(A, B, p->err);
+  friendsData *d, *var;
+  d = NULL;
+  if (B && C) {
+    var = friendsParserCreateVariable(p->park, C, friendsTrue, &p->err);
+    if (var) {
+      d = friendsParserCreateListTerm(p->park, B, var, &p->err);
+    }
+  }
+  A = d;
+  if (!d) {
+    friendsDeleteList(B);
+  }
 }
 
 term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA PARTICLE RKAGI. {
-  A = friendsNewData(p->park, p->err);
-  friendsSetVariable(A, C, friendsTrue, p->err);
-  friendsListAppend(B, A, p->err);
-  A = friendsNewData(p->park, p->err);
-  friendsSetList(A, B, p->err);
+  friendsData *d, *var;
+  d = NULL;
+  if (B && C) {
+    var = friendsParserCreateVariable(p->park, C, friendsTrue, &p->err);
+    if (var) {
+      d = friendsParserCreateListTerm(p->park, B, var, &p->err);
+    }
+  }
+  A = d;
+  if (!d) {
+    friendsDeleteList(B);
+  }
 }
 
 term(A) ::= term(B) NO ATOM(C). {
-  friendsDataList *ll;
-  friendsData *d;
-  d = friendsNewData(p->park, p->err);
-  friendsSetTextAtom(d, C, p->err);
-  ll = friendsGetList(B);
-  if (ll) {
-    friendsListAppend(ll, d, p->err);
-    A = B;
-  } else {
-    A = friendsNewData(p->park, p->err);
-    ll = friendsNewList(p->err);
-    friendsListAppend(ll, d, p->err);
-    friendsSetList(A, ll, p->err);
+  friendsData *d, *atom;
+  d = NULL;
+  if (B && C) {
+    atom = friendsParserCreateAtom(p->park, friendsNumericAtom, C, &p->err);
+    if (atom) {
+      d = friendsParserAddDataToTerm(B, atom, p->park, &p->err);
+    }
   }
+  A = d;
 }
 
 term(A) ::= term(B) NO TSUGI. {
-  friendsDataList *ll;
-  friendsData *d;
-  d = friendsNewData(p->park, p->err);
-  friendsSetNextAtom(d, p->err);
-  ll = friendsGetList(B);
-  if (ll) {
-    friendsListAppend(ll, d, p->err);
-    A = B;
-  } else {
-    A = friendsNewData(p->park, p->err);
-    ll = friendsNewList(p->err);
-    friendsListAppend(ll, d, p->err);
-    friendsSetList(A, ll, p->err);
+  friendsData *d, *atom;
+  d = NULL;
+  if (B) {
+    atom = friendsParserCreateAtom(p->park, friendsNextAtom, NULL, &p->err);
+    if (atom) {
+      d = friendsParserAddDataToTerm(B, atom, p->park, &p->err);
+    }
   }
+  A = d;
 }
 
+%type friend_part   {friendsPartData}
+%type conditionals  {friendsDataList *}
 %type complete_list {friendsDataList *}
-%type list {friendsDataList *}
-%type term {friendsData *}
-%type ATOM {friendsChar *}
-%type VARIABLE {friendsChar *}
+%type list          {friendsDataList *}
+%type term          {friendsData *}
+%token_type         {friendsData *}

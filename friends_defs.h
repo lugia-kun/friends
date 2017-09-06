@@ -20,7 +20,6 @@ struct friendsParkT;
 struct friendsDataT;
 struct friendsAtomDataT;
 struct friendsVariableDataT;
-struct friendsArgumentT;
 struct friendsPropositionDataT;
 struct friendsMatchDataT;
 
@@ -35,14 +34,15 @@ typedef struct friendsParkT            friendsPark;
 typedef struct friendsDataT            friendsData;
 typedef struct friendsAtomDataT        friendsAtomData;
 typedef struct friendsVariableDataT    friendsVariableData;
-typedef struct friendsArgumentDataT    friendsArgumentData;
 typedef struct friendsPropositionDataT friendsPropositionData;
 typedef struct friendsMatchDataT       friendsMatchData;
-typedef struct friendsParserT          friendsParser;
-typedef struct friendsLineColumnT      friendsLineColumn;
 typedef struct friendsDataListT        friendsDataList;
 typedef struct friendsDataSetT         friendsDataSet;
 typedef struct friendsDataSetNodeT     friendsDataSetNode;
+
+typedef struct friendsTokenDataT       friendsTokenData;
+typedef struct friendsParserT          friendsParser;
+typedef struct friendsLineColumnT      friendsLineColumn;
 
 /**
  * @typedef friendsPark
@@ -143,13 +143,12 @@ typedef enum {
   friendsVariable,     /*!< 変数 */
   friendsProposition,  /*!< 命題 */
 
-  friendsArgument,     /*!< 引数 */
-  friendsEtcetra,      /*!< リスト省略 */
-
   friendsList,  /*!< リスト */
   friendsSet,   /*!< セット */
 
   friendsMatch, /*!< 一致情報 */
+
+  friendsToken, /*!< パーサートークン */
 
   friendsLastType, /*!< 最後の型 */
 } friendsType;
@@ -164,6 +163,15 @@ typedef enum {
 
   friendsLastAtomType, /*!< 最後の型 */
 } friendsAtomType;
+
+/**
+ * @brief 命題データの扱いを表すのです。
+ */
+typedef enum {
+  friendsPropositionNormal,  /*!< ふつうの */
+  friendsPropositionStop,    /*!< たーのしー！ */
+  friendsPropositionQuery,   /*!< なんだっけ？ */
+} friendsPropositionMode;
 
 /**
  * @brief 真偽値を表すのです。
@@ -190,7 +198,7 @@ typedef enum {
                     /*!< 有効なデータ型になっている（未設定のデータが必要） */
 
   friendsErrorListIndex,     /*!< リストのインデックスが範囲外 */
-  friendsErrorListNested,    /*!< リストがネストしている */
+  friendsErrorTooNested,     /*!< ネストが深すぎる */
 
   friendsErrorNoArgument,    /*!< 命題の引数がない */
 

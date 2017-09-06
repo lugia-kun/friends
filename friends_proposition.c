@@ -7,7 +7,6 @@
 #include "friends_proposition.h"
 #include "friends_list.h"
 #include "friends_error.h"
-#include "friends_argument.h"
 #include "friends_string.h"
 
 const friendsPropositionData *friendsGetProposition(friendsData *d)
@@ -125,17 +124,51 @@ static friendsDataCompareResult friendsPropositionCompareV(const void *a,
                                    (const friendsPropositionData *)b);
 }
 
+static friendsBool friendsPropositionArgsChecker(friendsDataList *arguments,
+                                                 friendsError *err,
+                                                 int nest)
+{
+  friendsData *d;
+  friendsType t;
+  friendsDataList *l;
+  friendsBool b;
+
+  arguments = friendsListBegin(arguments);
+  for (; arguments; arguments = friendsListNext(arguments)) {
+    d = friendsListData(arguments);
+    if (!d) continue;
+    t = friendsGetType(d);
+    switch (t) {
+    case friendsAtom:
+    case friendsVariable:
+      break;
+    case friendsList:
+      if (nest > 10968) {
+        friendsSetError(err, TooNested);
+        return friendsFalse;
+      }
+      l = friendsGetList(d);
+      b = friendsPropositionArgsChecker(l, err, nest + 1);
+      if (b == friendsFalse) return b;
+      break;
+    default:
+      friendsSetError(err, InvalidType);
+      return friendsFalse;
+    }
+  }
+  return friendsTrue;
+}
+
 friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
                                    friendsDataList *arguments,
                                    friendsDataList *conditions,
-                                   friendsBool stop,
+                                   friendsPropositionMode mode,
                                    friendsError *err)
 {
   friendsDataList *l;
   friendsPropositionData *d;
   friendsData *dd;
   const friendsPropositionData *pd;
-  const friendsArgumentData *ad;
 
   friendsAssert(dest);
   friendsAssert(verb);
@@ -150,15 +183,8 @@ friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
   }
 
   arguments = friendsListParent(arguments);
-  l = friendsListBegin(arguments);
-  for (; l; l = friendsListNext(l)) {
-    dd = friendsListData(l);
-    ad = friendsGetArgument(dd);
-    if (!ad) {
-      friendsSetError(err, InvalidType);
-      return NULL;
-    }
-  }
+  if (friendsPropositionArgsChecker(arguments, err, 0) == friendsFalse)
+    return NULL;
 
   if (conditions) {
     conditions = friendsListParent(conditions);
@@ -181,7 +207,7 @@ friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
 
   d->arguments = arguments;
   d->conditions = conditions;
-  d->stop = stop;
+  d->mode = mode;
   d->verb = verb;
 
   dd = friendsSetData(dest, friendsProposition, d,
@@ -214,7 +240,22 @@ friendsBool friendsPropositionIsStop(const friendsPropositionData *p)
 {
   friendsAssert(p);
 
-  return p->stop;
+  if (p->mode == friendsPropositionStop) {
+    return friendsTrue;
+  } else {
+    return friendsFalse;
+  }
+}
+
+friendsBool friendsPropositionIsQuery(const friendsPropositionData *p)
+{
+  friendsAssert(p);
+
+  if (p->mode == friendsPropositionQuery) {
+    return friendsTrue;
+  } else {
+    return friendsFalse;
+  }
 }
 
 const friendsChar *friendsPropositionVerb(const friendsPropositionData *p)

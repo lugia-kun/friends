@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <limits.h>
 
 #include "friends_string.h"
 #include "friends_error.h"
@@ -125,6 +126,136 @@ size_t friendsStringCharCount(const friendsChar *start,
   return c;
 }
 
+static int friendsCharToNumeral(int base, const friendsChar **cur)
+{
+  int ir;
+  const friendsChar *YYCURSOR;
+  const friendsChar *YYMARKER;
+  const friendsChar *tok;
+
+  friendsAssert(cur && *cur);
+  friendsAssert(base >= 2 && base <= 36);
+
+  YYCURSOR = *cur;
+  for (;;) {
+    /*!re2c
+      re2c:indent:top = 2;
+
+      *  { ir = -1;  break; }
+      [0\uff10] { ir =  0;  break; }
+      [1\uff11] { ir =  1;  break; }
+      [2\uff12] { ir =  2;  break; }
+      [3\uff13] { ir =  3;  break; }
+      [4\uff14] { ir =  4;  break; }
+      [5\uff15] { ir =  5;  break; }
+      [6\uff16] { ir =  6;  break; }
+      [7\uff17] { ir =  7;  break; }
+      [8\uff18] { ir =  8;  break; }
+      [9\uff19] { ir =  9;  break; }
+      [aA\uff21\uff41] { ir = 10;  break; }
+      [bB\uff22\uff42] { ir = 11;  break; }
+      [cC\uff23\uff43] { ir = 12;  break; }
+      [dD\uff24\uff44] { ir = 13;  break; }
+      [eE\uff25\uff45] { ir = 14;  break; }
+      [fF\uff26\uff46] { ir = 15;  break; }
+      [gG\uff27\uff47] { ir = 16;  break; }
+      [hH\uff28\uff48] { ir = 17;  break; }
+      [iI\uff29\uff49] { ir = 18;  break; }
+      [jJ\uff2a\uff4a] { ir = 19;  break; }
+      [kK\uff2b\uff4b] { ir = 20;  break; }
+      [lL\uff2c\uff4c] { ir = 21;  break; }
+      [mM\uff2d\uff4d] { ir = 22;  break; }
+      [nN\uff2e\uff4e] { ir = 23;  break; }
+      [oO\uff2f\uff4f] { ir = 24;  break; }
+      [pP\uff30\uff50] { ir = 25;  break; }
+      [qQ\uff31\uff51] { ir = 26;  break; }
+      [rR\uff32\uff52] { ir = 27;  break; }
+      [sS\uff33\uff53] { ir = 28;  break; }
+      [tT\uff34\uff54] { ir = 29;  break; }
+      [uU\uff35\uff55] { ir = 30;  break; }
+      [vV\uff36\uff56] { ir = 31;  break; }
+      [wW\uff37\uff57] { ir = 32;  break; }
+      [xX\uff38\uff58] { ir = 33;  break; }
+      [yY\uff39\uff59] { ir = 34;  break; }
+      [zZ\uff3a\uff5a] { ir = 35;  break; }
+    */
+  }
+  if (ir >= base) {
+    ir = -1;
+  } else {
+    if (cur) *cur = YYCURSOR;
+  }
+  return ir;
+}
+
+long int friendsStringToLong(const friendsChar *text, const friendsChar **end,
+                             int base, friendsError *err)
+{
+  const friendsChar *YYCURSOR = text;
+  const friendsChar *YYMARKER;
+  long int li = 0;
+  int ix;
+  friendsBool neg = friendsFalse;
+
+  friendsAssert(text);
+  friendsAssert(base >= 0);
+
+  for (;;) {
+    text = YYCURSOR;
+    /*!re2c
+      re2c:indent:top = 2;
+
+      *               { YYCURSOR = text; break; }
+      [ \t\u3000]     { continue; }
+      [-\u2212\uff0d] { neg = friendsTrue; break; }
+    */
+    friendsUnreachable();
+  }
+  text = YYCURSOR;
+  if (base == 0) {
+    ix = friendsCharToNumeral(34, &YYCURSOR);
+    if (ix == 0) {
+      text = YYCURSOR;
+      ix = friendsCharToNumeral(34, &YYCURSOR);
+      if (ix == 33) { /* X */
+        base = 16;
+      } else {
+        base = 8;
+        YYCURSOR = text;
+      }
+    } else {
+      base = 10;
+      YYCURSOR = text;
+    }
+  }
+  for (;;) {
+    text = YYCURSOR;
+    ix = friendsCharToNumeral(base, &YYCURSOR);
+    if (ix < 0) break;
+    if (li >= 0) {
+      li = li * base + ix;
+    }
+    if (li < 0) {
+      friendsSetError(err, RANGE);
+      li = -1;
+    }
+  }
+  if (li >= 0) {
+    if (neg == friendsTrue) {
+      li = -li;
+    }
+    if (end) {
+      *end = text;
+    }
+  } else {
+    li = LONG_MIN;
+    if (end) {
+      *end = NULL;
+    }
+  }
+  return li;
+}
+
 /* Interaction with normal char */
 /*!re2c
   re2c:define:YYCTYPE = "unsigned char";
@@ -183,7 +314,7 @@ int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
     int i;
 
     if (step) {
-      n = (n / 8 + 1) * 8;
+      n = n + 1;
       tmp = (friendsChar *)malloc(sizeof(friendsChar) * n);
       if (!tmp) {
         friendsSetError(err, NOMEM);
