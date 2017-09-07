@@ -255,12 +255,13 @@ static void *friendsExtendBuffer(friendsChar **tbuf,
   return tmp;
 }
 
-int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
+static int friendsGetLineCore(friendsChar **buf, FILE *fp,
+                              const friendsCodeSet *ccode,
+                              friendsError *err)
 {
   enum { bufsz_increment_size = 16 / sizeof(friendsChar) };
   size_t bufsz;
   size_t offset;
-  const friendsCodeSet *ccode;
   friendsChar *tbuf, *tmp;
   friendsChar *wptr;
   friendsChar *limp;
@@ -276,8 +277,6 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
 
   friendsAssert(buf);
   friendsAssert(fp);
-
-  ccode = friendsGetTerminalEncoding();
   friendsAssert(ccode);
 
   if (!err) {
@@ -387,4 +386,16 @@ int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err)
 
   free(cbuf);
   return iret;
+}
+
+int friendsGetLineF(friendsChar **buf, FILE *fp, friendsError *err)
+{
+  const friendsCodeSet *ccode;
+  ccode = friendsGetTerminalEncoding();
+  return friendsGetLineCore(buf, fp, ccode, err);
+}
+
+int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err)
+{
+  return friendsGetLineCore(buf, fp->file, fp->encoding, err);
 }

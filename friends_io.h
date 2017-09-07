@@ -200,6 +200,15 @@ int friendsPrintCV(FILE *fp, friendsError *err,
  *
  * @relate friendsSetTerminalEncoding
  */
-int friendsGetLine(friendsChar **buf, FILE *fp, friendsError *err);
+int friendsGetLineF(friendsChar **buf, FILE *fp, friendsError *err);
+
+/**
+ * @brief 文字列を一行読み込むのです。
+ * @param buf ここに必要なだけメモリを確保して保存するのです。
+ * @param fp 読み込み元をよこすのです。
+ * @param err NULL でなければ、ここにエラーの情報を書き込むのです。
+ * @return 読み込んだ配列要素数を返すのです。
+ */
+int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err);
 
 #endif

@@ -17,7 +17,7 @@ int main(int argc, char **argv)
   friendsError e;
 
   friendsPrintCF(stdout, &e, "> ");
-  friendsGetLine(&t, stdin, &e);
+  friendsGetLineF(&t, stdin, &e);
   friendsPrintCF(stdout, &e, "%ls", t);
 
   free(t);
