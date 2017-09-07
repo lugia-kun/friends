@@ -21,6 +21,13 @@ if(${CMAKE_C_COMPILER_ID} MATCHES MSVC)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /utf-8")
 endif()
 
+find_package(PkgConfig)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(LIBEDIT libedit)
+else()
+  unset(LIBEDIT_FOUND)
+endif()
+
 if("${WCHAR_T}" EQUAL 2)
   set(FRIENDS_CTYPE "WCHAR_T")
 elseif("${USHORT_T}" EQUAL 2)
@@ -42,65 +49,14 @@ option(FRIENDS_ENABLE_FULLPATH_SOURCE_NAME
   "Print fullpath of source file on errors" OFF)
 mark_as_advanced(FRIENDS_ENABLE_FULLPATH_SOURCE_NAME)
 
-find_program(RE2C_EXECUTABLE re2c
-  HINTS /bin /usr/bin /usr/local/bin)
-set(RE2CFLAGS "-s" CACHE STRING "re2c flags")
-set(RE2CFLAGS_DEBUG "-W" CACHE STRING "re2c debug-only flags")
-set(RE2CFLAGS_RELEASE "--no-generation-date -i" CACHE STRING "re2c release-only flags")
-set(RE2CFLAGS_MINSIZEREL "" CACHE STRING "re2c minsizerel flags")
-set(RE2CFLAGS_RELWITHDEBINFO "" CACHE STRING "re2c relwithdebinfo flags")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_program(LEMON_EXECUTABLE lemon)
+# Currently these apps are mandatory. If we provide a source code for
+# a *specific* configuration, these apps will not be mandatory (but
+# still required for development).
 
-function(add_re2c_target OUT IN)
-  get_source_file_property(FS "${IN}" COMPILE_OPTIONS)
-  if (FS)
-    string(REPLACE " " ";" FS "${FS}")
-  else()
-    set(FS)
-  endif()
-  string(TOUPPER "${CMAKE_BUILD_TYPE}" U)
-  string(REPLACE " " ";" F "${RE2CFLAGS}")
-  string(REPLACE " " ";" FN "${RE2CFLAGS_${U}}")
-  if(NOT IS_ABSOLUTE "${IN}")
-    get_source_file_property(GEN "${CMAKE_CURRENT_BINARY_DIR}/${IN}"
-      GENERATED)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${IN}" OR GEN)
-      set(IN "${CMAKE_CURRENT_BINARY_DIR}/${IN}")
-    else()
-      set(IN "${CMAKE_CURRENT_SOURCE_DIR}/${IN}")
-    endif()
-  endif()
-  add_custom_command(OUTPUT "${OUT}"
-    COMMAND "${RE2C_EXECUTABLE}" ${F} ${FN} ${FS}
-    -o "${OUT}" "${IN}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    DEPENDS "${IN}"
-    COMMENT "[RE2C] Generating ${OUT}")
-endfunction()
-
-set(LEMONFLAGS "" CACHE STRING "lemon flags")
-function(add_lemon_target OUT IN)
-  string(TOUPPER "${CMAKE_BUILD_TYPE}" U)
-  string(REPLACE " " ";" F "${LEMONFLAGS}")
-  if(NOT IS_ABSOLUTE "${IN}")
-    get_source_file_property(GEN "${CMAKE_CURRENT_BINARY_DIR}/${IN}"
-      GENERATED)
-    if(GEN)
-      set(IN "${CMAKE_CURRENT_BINARY_DIR}/${IN}")
-    else()
-      set(IN "${CMAKE_CURRENT_SOURCE_DIR}/${IN}")
-    endif()
-  endif()
-  string(REGEX REPLACE ".c$" ".lem" OUT_BASE "${OUT}")
-  string(REGEX REPLACE ".c$" ".h" OUT_HEADER "${OUT}")
-  add_custom_command(OUTPUT "${OUT}" "${OUT_HEADER}"
-    COMMAND "${CMAKE_COMMAND}" "-E" "copy" "${IN}" "${OUT_BASE}"
-    COMMAND "${LEMON_EXECUTABLE}" ${F} "${OUT_BASE}"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    DEPENDS "${IN}"
-    COMMENT "[LEMON] Generating ${OUT}")
-endfunction()
+find_package(RE2C "0.16" REQUIRED)
+find_package(LEMON REQUIRED)
 
 if(FRIENDS_USE_UTF8_INTERNAL)
   set(RE2C_ENCODING_FLAGS "-8")
@@ -123,19 +79,19 @@ set(FRIENDS_RE2C_SOURCES  friends_lexer.re friends_string.re
   enc/utf8.re  enc/utf8r.re)
 
 if(FRIENDS_ENABLE_SJIS)
-  add_mktble_target(${CMAKE_CURRENT_SOURCE_DIR}/enc/windows-932-2000.ucm
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktble.tpl
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktbler.tpl
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktble.htpl
+  add_ucm2re_target(${CMAKE_CURRENT_SOURCE_DIR}/enc/windows-932-2000.ucm
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2re.tpl
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2rer.tpl
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2re.htpl
     enc/sjis.re enc/sjisr.re Sjis enc/sjis.h "Shift_JIS")
   list(APPEND FRIENDS_RE2C_SOURCES
     enc/sjis.re  enc/sjisr.re)
 endif()
 if(FRIENDS_ENABLE_EUCJP)
-  add_mktble_target(${CMAKE_CURRENT_SOURCE_DIR}/enc/glibc-EUC_JP-2.3.3.ucm
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktble.tpl
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktbler.tpl
-    ${CMAKE_CURRENT_SOURCE_DIR}/enc/mktble.htpl
+  add_ucm2re_target(${CMAKE_CURRENT_SOURCE_DIR}/enc/glibc-EUC_JP-2.3.3.ucm
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2re.tpl
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2rer.tpl
+    ${CMAKE_CURRENT_SOURCE_DIR}/enc/ucm2re.htpl
     enc/eucjp.re enc/eucjpr.re Eucjp enc/eucjp.h "EUC-JP")
   list(APPEND FRIENDS_RE2C_SOURCES
     enc/eucjp.re enc/eucjpr.re)
@@ -180,11 +136,17 @@ add_library(libfriends STATIC
   ${FRIENDS_RE2C_C_SOURCES}
   ${FRIENDS_LEMON_C_SOURCES})
 
+set(LIBFRIENDS_INCLUDES)
+list(APPEND LIBFRIENDS_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND LIBFRIENDS_INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
+set(LIBFRIENDS_INCLUDE_DIR "${LIBFRIENDS_INCLUDES}")
+if (LIBEDIT_FOUND EQUAL 1)
+  list(APPEND LIBFRIENDS_INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
+endif()
 set_target_properties(libfriends PROPERTIES
   INCLUDE_DIRECTORIES
-  "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR}"
+  "${LIBFRIENDS_INCLUDES}"
   OUTPUT_NAME friends)
-set(LIBFRIENDS_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_BINARY_DIR}")
 
 add_executable(friends main.c)
 target_link_libraries(friends libfriends)
