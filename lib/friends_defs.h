@@ -122,10 +122,7 @@ typedef unsigned char friendsChar;
 /* UTF-16 */
 #define FRIENDS_MAX_CHAR 2
 
-#if defined(HAVE_WCHAR_H) && defined(HAVE_WCHAR_T) && WCHAR_T_SIZE == 2
-#include <wchar.h>
-typedef unsigned wchar_t friendsChar;
-#elif defined(HAVE_USHORT_T) && USHORT_T_SIZE == 2
+#if defined(HAVE_USHORT_T) && USHORT_T_SIZE == 2
 typedef unsigned short   friendsChar;
 #elif defined(HAVE_UINT16_T) && UINT16_T_SIZE == 2
 typedef uint16_t         friendsChar;

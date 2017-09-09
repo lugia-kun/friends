@@ -1,4 +1,6 @@
 
+#include "friends_config.h"
+
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
@@ -6,6 +8,14 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef LIBEDIT_FOUND
+#include <histedit.h>
+#endif
 
 #include "friends_io.h"
 #include "friends_string.h"
@@ -398,4 +408,33 @@ int friendsGetLineF(friendsChar **buf, FILE *fp, friendsError *err)
 int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err)
 {
   return friendsGetLineCore(buf, fp->file, fp->encoding, err);
+}
+
+
+#ifdef LIBEDIT_FOUND
+static char *friendsPromptGen(EditLine *e)
+{
+  return "> ";
+}
+#endif
+
+int friendsPrompt(friendsChar **result, friendsChar *prompt,
+                  friendsError *err)
+{
+#if defined(LIBEDIT_FOUND)
+  EditLine *el;
+  const char *line;
+  int count;
+
+  friendsAssert(result);
+
+  el = el_init("friends", stdin, stdout, stderr);
+  el_set(el, EL_PROMPT, &friendsPromptGen);
+  el_set(el, EL_EDITOR, "emacs");
+
+  line = el_gets(el, &count);
+
+#else
+#error 1
+#endif
 }

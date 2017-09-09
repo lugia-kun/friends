@@ -18,7 +18,7 @@ find_package_handle_standard_args(RE2C
   VERSION_VAR RE2C_VERSION)
 
 if (RE2C_FOUND)
-  set(RE2CFLAGS "-s" CACHE STRING "re2c flags")
+  set(RE2CFLAGS "" CACHE STRING "re2c flags")
   set(RE2CFLAGS_DEBUG "-W" CACHE STRING "re2c debug-only flags")
   set(RE2CFLAGS_RELEASE "--no-generation-date -i" CACHE STRING "re2c release-only flags")
   set(RE2CFLAGS_MINSIZEREL "" CACHE STRING "re2c minsizerel flags")

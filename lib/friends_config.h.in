@@ -3,18 +3,14 @@
 
 #cmakedefine HAVE_STDINT_H
 #cmakedefine HAVE_UNISTD_H
-#cmakedefine HAVE_WCHAR_H
+#cmakedefine LIBEDIT_FOUND
 
-#cmakedefine HAVE_WCHAR_T
 #cmakedefine HAVE_USHORT_T
 #cmakedefine HAVE_UINT16_T
 
 #cmakedefine FRIENDS_USE_UTF8_INTERNAL
 #cmakedefine USE_POSIX_KILL
 
-#ifdef HAVE_WCHAR_T
-#define WCHAR_T_SIZE  @WCHAR_T@
-#endif
 #ifdef HAVE_USHORT_T
 #define USHORT_T_SIZE @USHORT_T@
 #endif

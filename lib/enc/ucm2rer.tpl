@@ -42,13 +42,13 @@ int friendsOne@NAME@ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   fchar[0] = 0;
 
 #ifdef FRIENDS_USE_UTF8_INTERNAL
-  /*!mktble
-    mktble:dir = -1;
-    mktble:utfbits = 8;
-    mktble:from = "cur";
-    mktble:to = "fchar";
-    mktble:indent:top = 1;
-    mktble:indent:string = "  ";
+  /*!ucm2re
+    ucm2re:dir = -1;
+    ucm2re:utfbits = 8;
+    ucm2re:from = "cur";
+    ucm2re:to = "fchar";
+    ucm2re:indent:top = 1;
+    ucm2re:indent:string = "  ";
 
     OK  { goto ok; }
     NG  { friendsSetError(err, ILSEQ); goto ng; }
@@ -56,9 +56,9 @@ int friendsOne@NAME@ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   */
 
 #else
-  /*!mktble
-    mktble:dir = -1;
-    mktble:utfbits = 16;
+  /*!ucm2re
+    ucm2re:dir = -1;
+    ucm2re:utfbits = 16;
 
     OK  { goto ok; }
     NG  { friendsSetError(err, ILSEQ); goto ng; }

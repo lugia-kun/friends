@@ -420,7 +420,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
     /*!re2c
       * { goto copy; }
       "\x00" { break; }
-      "/""*!mktble" { goto mktble_start; }
+      "/""*!ucm2re" { goto mktble_start; }
       "@" { goto at_embed; }
      */
 
@@ -448,7 +448,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
         "OK"   { dest = &data.oks;  goto statement; }
         "NG"   { dest = &data.ngs;  goto statement; }
         "END"  { dest = &data.ends; goto statement; }
-        "mktble:" { goto mktbleconf; }
+        "ucm2re:" { goto mktbleconf; }
         "//"   { goto mktblecomment; }
         "*""/" { break; }
        */
@@ -587,9 +587,9 @@ int embed_code(tblset *set, FILE *input, FILE *output)
       cs_printf(output, data.top + 1, data.indent,
                 "  re2c:indent:string = \"%s\";\n\n", data.indent);
       cs_printf(output, data.top + 1, data.indent,
-                "  * { goto mktble_ng; }\n", data.indent);
+                "  * { goto ucm2re_ng; }\n", data.indent);
       cs_printf(output, data.top + 1, data.indent,
-                "  \"\\x00\" { goto mktble_end; }\n", data.indent);
+                "  \"\\x00\" { goto ucm2re_end; }\n", data.indent);
       if (data.dir > 0) { // Unicode to MBCS.
         ci = set->charmaps;
         for (; ci; ci = ci->next) {
@@ -597,11 +597,11 @@ int embed_code(tblset *set, FILE *input, FILE *output)
           if (ci->u32char == 0) continue;
           if (ci->u32char <= 0xffff) {
             cs_printf(output, data.top + 1, data.indent,
-                      "  \"\\u%04x\" { (%s) = \"%s\"; goto mktble_ok; }\n",
+                      "  \"\\u%04x\" { (%s) = \"%s\"; goto ucm2re_ok; }\n",
                       ci->u32char, data.to, ci->mbcs);
           } else {
             cs_printf(output, data.top + 1, data.indent,
-                      "  \"\\U%08x\" { (%s) = \"%s\"; goto mktble_ok; }\n",
+                      "  \"\\U%08x\" { (%s) = \"%s\"; goto ucm2re_ok; }\n",
                       ci->u32char, data.to, ci->mbcs);
           }
         }
@@ -613,11 +613,11 @@ int embed_code(tblset *set, FILE *input, FILE *output)
           if (ci->u32char <= 0xffff) {
             if (data.utfbits > 16) {
               cs_printf(output, data.top + 1, data.indent,
-                        "  \"%s\" { (%s) = %#06x; goto mktble_ok; }\n",
+                        "  \"%s\" { (%s) = %#06x; goto ucm2re_ok; }\n",
                         ci->mbcs, data.to, ci->u32char);
             } else if (data.utfbits > 8) {
               cs_printf(output, data.top + 1, data.indent,
-                        "  \"%s\" { (%s)[0] = %#06x; (%s)[1] = 0x0000; goto mktble_ok; }\n",
+                        "  \"%s\" { (%s)[0] = %#06x; (%s)[1] = 0x0000; goto ucm2re_ok; }\n",
                         ci->mbcs, data.to, ci->u32char, data.to);
             } else {
               if (ci->u32char >= 0x0800) {
@@ -625,7 +625,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
                           "  \"%s\" { "
                           "(%s)[0] = %#04x; (%s)[1] = %#04x; "
                           "(%s)[2] = %#04x; (%s)[3] = %#04x; "
-                          "goto mktble_ok; }\n",
+                          "goto ucm2re_ok; }\n",
                           ci->mbcs,
                           data.to, (0xe0 | ((ci->u32char >> 12) & 0x0f)),
                           data.to, (0x80 | ((ci->u32char >>  6) & 0x3f)),
@@ -636,7 +636,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
                           "  \"%s\" { "
                           "(%s)[0] = %#04x; (%s)[1] = %#04x; "
                           "(%s)[2] = %#04x; (%s)[3] = %#04x; "
-                          "goto mktble_ok; }\n",
+                          "goto ucm2re_ok; }\n",
                           ci->mbcs,
                           data.to, (0xc0 | ((ci->u32char >>  6) & 0x1f)),
                           data.to, (0x80 | ( ci->u32char        & 0x3f)),
@@ -646,7 +646,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
                           "  \"%s\" { "
                           "(%s)[0] = %#04x; (%s)[1] = %#04x; "
                           "(%s)[2] = %#04x; (%s)[3] = %#04x; "
-                          "goto mktble_ok; }\n",
+                          "goto ucm2re_ok; }\n",
                           ci->mbcs,
                           data.to, ci->u32char,
                           data.to, 0, data.to, 0, data.to, 0);
@@ -655,12 +655,12 @@ int embed_code(tblset *set, FILE *input, FILE *output)
           } else {
             if (data.utfbits > 16) {
               cs_printf(output, data.top + 1, data.indent,
-                        "  \"%s\" { (%s) = %#10x; goto mktble_ok; }\n",
+                        "  \"%s\" { (%s) = %#10x; goto ucm2re_ok; }\n",
                         ci->mbcs, data.to, ci->u32char);
             } else if (data.utfbits > 8) {
               ci->u32char -= 0x10000;
               cs_printf(output, data.top + 1, data.indent,
-                        "  \"%s\" { (%s)[0] = %#06x; (%s)[1] = %#06x; goto mktble_ok; }\n",
+                        "  \"%s\" { (%s)[0] = %#06x; (%s)[1] = %#06x; goto ucm2re_ok; }\n",
                         ci->mbcs,
                         data.to, (0xd800 | (ci->u32char >> 10)),
                         data.to, (0xdc00 | (ci->u32char & 0x3ff)));
@@ -669,7 +669,7 @@ int embed_code(tblset *set, FILE *input, FILE *output)
                         "  \"%s\" { "
                         "(%s)[0] = %#04x; (%s)[1] = %#04x; "
                         "(%s)[2] = %#04x; (%s)[3] = %#04x; "
-                        "goto mktble_ok; }\n",
+                        "goto ucm2re_ok; }\n",
                         ci->mbcs,
                         data.to, (0xf0 | ((ci->u32char >> 18) & 0x07)),
                         data.to, (0x80 | ((ci->u32char >> 12) & 0x3f)),
@@ -681,13 +681,13 @@ int embed_code(tblset *set, FILE *input, FILE *output)
       }
       cs_printf(output, data.top + 1, data.indent, " *""/\n\n");
 
-      cs_printf(output, data.top + 1, data.indent, "mktble_ok:\n");
+      cs_printf(output, data.top + 1, data.indent, "ucm2re_ok:\n");
       cs_printf(output, data.top + 1, data.indent, "{%s}\n\n", data.oks);
 
-      cs_printf(output, data.top + 1, data.indent, "mktble_ng:\n");
+      cs_printf(output, data.top + 1, data.indent, "ucm2re_ng:\n");
       cs_printf(output, data.top + 1, data.indent, "{%s}\n\n", data.ngs);
 
-      cs_printf(output, data.top + 1, data.indent, "mktble_end:\n");
+      cs_printf(output, data.top + 1, data.indent, "ucm2re_end:\n");
       cs_printf(output, data.top + 1, data.indent, "{%s}\n\n", data.ends);
 
       cs_printf(output, data.top, data.indent, "}\n");

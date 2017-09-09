@@ -53,12 +53,12 @@ int friendsFCharTo@NAME@(char **buf, const friendsChar *b, friendsError *err)
 
     cur = b;
     for (;;) {
-      /*!mktble
-        mktble:dir = 1;
-        mktble:from = "cur";
-        mktble:to = "mbcs";
-        mktble:indent:top = 3;
-        mktble:indent:string = "  ";
+      /*!ucm2re
+        ucm2re:dir = 1;
+        ucm2re:from = "cur";
+        ucm2re:to = "mbcs";
+        ucm2re:indent:top = 3;
+        ucm2re:indent:string = "  ";
 
         OK  {
           while (*mbcs) {
