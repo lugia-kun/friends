@@ -58,6 +58,7 @@ void friendsDeletePark(friendsPark *park)
   friendsDeleteList(park->alloc_table);
   friendsDeleteSet(park->atoms);
   friendsDeleteSet(park->friends);
+  friendsDeleteParser(park->parser);
   free(park);
 }
 

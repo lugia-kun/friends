@@ -28,4 +28,7 @@ friendsParser *friendsNewParser(friendsPark *park, friendsError *err);
  */
 void friendsDeleteParser(friendsParser *parser);
 
+int friendsAppendParseText(friendsParser *parser, friendsChar *text);
+
+
 #endif /* FRIENDS_PARSER_H */

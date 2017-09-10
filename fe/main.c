@@ -11,21 +11,27 @@
 #include "friends_data.h"
 #include "friends_atom.h"
 #include "friends_string.h"
+#include "friends_parser.h"
+#include "friends_lexer.h"
+
 
 int main(int argc, char **argv)
 {
+  friendsPark *park;
+  friendsParser *parser;
   friendsChar *p;
   friendsChar *t;
   friendsError e;
 
   setlocale(LC_CTYPE, "");
 
+#if 0
   t = NULL;
   p = NULL;
   e = friendsNoError;
 
   friendsUnescapeStringLiteral(&p,
-                               "\\u30d5\\u30ec\\u30f3\\u30ba>"  /* フレンズ> */,
+                               "\\u30d5\\u30ec\\u30f3\\u30ba> "  /* フレンズ> */,
                                &e);
   friendsPrompt(&t, p, &e);
   if (friendsAnyError(e)) {
@@ -36,5 +42,15 @@ int main(int argc, char **argv)
 
   free(p);
   free(t);
+#endif
+
+  park = friendsNewPark(&e);
+  if (!park) return 1;
+
+  parser = friendsGetParser(park, &e);
+  
+
+  friendsDeletePark(park);
+  
   return 0;
 }

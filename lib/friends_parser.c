@@ -65,6 +65,8 @@ friendsParser *friendsNewParser(friendsPark *park, friendsError *err)
 
 void friendsDeleteParser(friendsParser *parser)
 {
+  friendsDataList *l;
+
   if (!parser) return;
 
   friendsAssert(parser->park);
@@ -72,10 +74,19 @@ void friendsDeleteParser(friendsParser *parser)
   if (parser->park) {
     parser->park->parser = NULL;
   }
+  l = friendsListBegin(parser->buffer_list);
+  for (; l; l = friendsListNext(l)) {
+    
+  }
 
   friendsDeleteList(parser->buffer_list);
   friendsDeleteList(parser->tokens);
   friendsDeleteList(parser->parsed_data);
   friendsParserCoreFree(parser->parserData, free);
   free(parser);
+}
+
+int friendsAppendParseText(friendsParser *parser, friendsChar *text)
+{
+  
 }

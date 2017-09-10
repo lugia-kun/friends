@@ -412,9 +412,15 @@ int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err)
 
 
 #ifdef LIBEDIT_FOUND
+static struct friendsPromptData {
+  const char *prompt;
+} promptData;
+
 static char *friendsPromptGen(EditLine *e)
 {
-  return "> ";
+  const char *c = promptData.prompt;
+  if (!c) promptData.prompt = "> ";
+  return c;
 }
 #endif
 
@@ -431,10 +437,12 @@ int friendsPrompt(friendsChar **result, friendsChar *prompt,
   ccode = friendsGetTerminalEncoding();
   friendsAssert(ccode);
 
+  prpt_cstr = NULL;
   count = ccode->dec(&prpt_cstr, prompt, err);
   if (count < 0) {
     prpt_cstr = NULL;
   }
+  promptData.prompt = prpt_cstr;
 
   el = el_init("friends", stdin, stdout, stderr);
   el_set(el, EL_PROMPT, &friendsPromptGen);
