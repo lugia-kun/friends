@@ -1,8 +1,23 @@
 #!ruby
 
+begin
+  require 'readline'
+  $readline = true
+rescue LoadError
+  $readline = false
+end
+
 LINE_LIMIT = 30
 
-while l = $stdin.gets
+def reader
+  if $readline
+    Readline.readline("", $stdin)
+  else
+    $stdin.gets
+  end
+end
+
+while l = reader
   d = l.chomp.encode("UTF-32LE")
   a = d.unpack("V*")
   a.map! do |x|

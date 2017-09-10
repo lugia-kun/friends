@@ -211,4 +211,6 @@ int friendsGetLineF(friendsChar **buf, FILE *fp, friendsError *err);
  */
 int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err);
 
+int friendsPrompt(friendsChar **result, friendsChar *prompt,
+                  friendsError *err);
 #endif

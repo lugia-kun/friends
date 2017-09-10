@@ -425,16 +425,46 @@ int friendsPrompt(friendsChar **result, friendsChar *prompt,
   EditLine *el;
   const char *line;
   int count;
+  char *prpt_cstr;
+  const friendsCodeSet *ccode;
 
-  friendsAssert(result);
+  ccode = friendsGetTerminalEncoding();
+  friendsAssert(ccode);
+
+  count = ccode->dec(&prpt_cstr, prompt, err);
+  if (count < 0) {
+    prpt_cstr = NULL;
+  }
 
   el = el_init("friends", stdin, stdout, stderr);
   el_set(el, EL_PROMPT, &friendsPromptGen);
   el_set(el, EL_EDITOR, "emacs");
 
+  /* number of characters set to count */
   line = el_gets(el, &count);
+  if (line && count > 0) {
+    count = ccode->enc(result, line, err);
+  } else if (count == 0) {
+    count = friendsUnescapeStringLiteral(result, "", err);
+  } else {
+    count = -1;
+    friendsSetErrorFromErrno(err, errno);
+  }
+  el_end(el);
+
+  free(prpt_cstr);
+
+  return count;
 
 #else
-#error 1
+#if defined(HAVE_UNISTD_H)
+  if (isatty(fileno(stdin))) {
+#endif
+    friendsPrintCF(stdout, err, "%ls", prompt);
+#if defined(HAVE_UNISTD_H)
+  }
+#endif
+  return friendsGetLine(result, stdin, err);
+
 #endif
 }

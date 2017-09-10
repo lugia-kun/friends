@@ -20,11 +20,11 @@
 #include "friends_string.h"
 #include "friends_test.h"
 
-#define SAMPLE_CODE                                          \
-  "\\u3059\\u3054\\u30fc\\u3044\\uff01"   /* すごーい！ */   \
-  " 0 \\u306f \\u81ea\\u7136\\u6570"      /*  0 は 自然数 */ \
-  "\\u306e \\u30d5\\u30ec\\u30f3\\u30ba"  /* の フレンズ */  \
-  " \\u306a\\u3093\\u3060\\u306d\\uff01"  /*  なんだね！ */
+#define SAMPLE_CODE                                         \
+  "\\u3059\\u3054\\u30fc\\u3044\\uff01"  /* すごーい！ */   \
+  " 0 \\u306f \\u81ea\\u7136\\u6570"     /*  0 は 自然数 */ \
+  "\\u306e \\u30d5\\u30ec\\u30f3\\u30ba" /* の フレンズ */  \
+  " \\u306a\\u3093\\u3060\\u306d\\uff01" /*  なんだね！ */
 
 #define LONG_CODE                                                 \
   "\\u3059\\u3054\\u30fc\\u3044\\uff01"  /* すごーい！ */         \
@@ -36,6 +36,23 @@
   "\\u30f3\\u30ba \\u306a\\u3093\\u3060" /* ンズ なんだ */        \
   "\\u306d\\uff01 \\u305f\\u30fc\\u306e" /* ね！ たーの */        \
   "\\u3057\\u30fc\\uff01"                /* しー！ */
+
+#define MIXED_CODE                                               \
+  "\\u3059\\u3054\\u30fc\\u3044\\uff01"  /* すごーい！ */        \
+  " \\u304d\\u307f \\u304c \\U0001f989"  /*  きみ が （助手） */ \
+  "\\u3000\\u3068 \\u4ef2\\u306e\\u3044" /* 　と 仲のい */       \
+  "\\u3044 \\u30d5\\u30ec\\u30f3\\u30ba" /* い フレンズ */       \
+  " \\u3067\\u3001"                      /*  で、 */             \
+  "\\u305d\\u308c \\u304c \\u03b1"       /* それ が α */         \
+  " \\u3068 \\u8a00\\u308f\\u308c"       /*  と 言われ */        \
+  "\\u308b \\u30d5\\u30ec\\u30f3\\u30ba" /* る フレンズ */       \
+  " \\u306a\\u3089\\u3001"               /* なら、 */            \
+  "\\u304d\\u307f \\u3068 \\u305d"       /* きみ と そ */        \
+  "\\u308c \\u306f \\u3059\\u3066"       /* れ は すて */        \
+  "\\u304d\\u306a \\u30d5\\u30ec\\u30f3" /* きな フレン */       \
+  "\\u30ba \\u306a\\u3093\\u3060\\u306d" /* ズ なんだね */       \
+  "\\uff01"                              /* ！ */
+
 
 #define FULL_HIRAGANA "\\u3042"      /* あ */
 #define KANJI         "\\u6c38"      /* 永 */
@@ -170,7 +187,7 @@ int main(int argc, char **argv)
     { FULL_TILDE, 3 },
     { NULL, 0 }
   };
-  const char *utf8TestStrings[] = { SAMPLE_CODE, LONG_CODE, NULL };
+  const char *utf8TestStrings[] = { SAMPLE_CODE, LONG_CODE, MIXED_CODE, NULL };
   codeTestData utf8TestData = { utf8TestChars, utf8TestStrings };
 
   ret = EXIT_SUCCESS;

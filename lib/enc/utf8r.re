@@ -105,10 +105,8 @@ int friendsOneUtf8ToFChar(friendsChar fchar[FRIENDS_MAX_CHAR],
   for (i = 0; i < FRIENDS_MAX_CHAR; ++i) {
     fchar[i] = *mrk;
     mrk++;
-    if (mrk >= cur) {
-      if (i < FRIENDS_MAX_CHAR - 1) {
-        fchar[i + 1] = 0;
-      }
+    if (mrk > cur) {
+      fchar[i] = 0;
       break;
     }
   }
