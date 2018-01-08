@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "friends_io.h"
 #include "friends_error.h"
@@ -237,8 +238,8 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
   char sign;
   int width;
   int precision;
-  unsigned long long int uintval;
-  long long int intval;
+  uintmax_t uintval;
+  intmax_t intval;
   double fltval;
   int base;
   const friendsChar *fchrp;
@@ -260,8 +261,8 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
     HALF      = 0x0040,
     LONG      = 0x0080,
     QUADRUPLE = 0x0100,
-    PTRDIFF   = 0x0200,
-    SIZET     = 0x0400,
+    SIZET     = 0x0200,
+    MAXT      = 0x0400,
 
     FPT       = 0x1000,
     CAPITAL   = 0x2000,
@@ -309,7 +310,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
         re2c:indent:top = 3;
 
         percent = "%";
-        modifiers   = [hl];
+        modifiers   = [hltj];
         conversions = [diouxXeEgGaAfFcsp];
 
         *      { goto copy_char; }
@@ -432,6 +433,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
         "ll" { flags |= QUADRUPLE; goto convert; }
         "l"  { flags |= LONG;      goto convert; }
         "t"  { flags |= SIZET;     goto convert; }
+        "j"  { flags |= MAXT;      goto convert; }
         conversions { YYCURSOR = token; goto convert; }
        */
 
@@ -476,6 +478,10 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
         intval = va_arg(ap, long);
       } else if (flags & QUADRUPLE) {
         intval = va_arg(ap, long long);
+      } else if (flags & SIZET) {
+        intval = va_arg(ap, friendsSize);
+      } else if (flags & MAXT) {
+        intval = va_arg(ap, intmax_t);
       } else {
         intval = va_arg(ap, int);
       }
@@ -516,7 +522,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
       szcnt += copyChars(&dstc, tmp, wlim, 0);
       free(tmp);
 
-      uintval = (unsigned long long)va_arg(ap, void *);
+      uintval = (uintmax_t)va_arg(ap, void *);
       goto number;
 
     hex_conversion:
@@ -653,7 +659,7 @@ int friendsAsprintV(friendsChar **buf, friendsError *err,
       }
       sbuf[0] = '\\';
       sbuf[1] = 'U';
-      snprintf(&sbuf[2], sbuf_size - 2, "%08llx", uintval & 0xffffff);
+      snprintf(&sbuf[2], sbuf_size - 2, "%08" PRIxMAX, uintval & 0xffffff);
       friendsUnescapeStringLiteral(&pstr, sbuf, err);
       if (friendsAnyError(*err)) goto error;
       fchrp = pstr;
