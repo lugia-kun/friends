@@ -11,48 +11,59 @@
 
 #include "friends_config.h"
 
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
+
 /* Core Data types */
-struct friendsMemoryT;
-typedef struct friendsMemoryT friendsMemory;
+struct friendsMemory;
+typedef struct friendsMemory friendsMemory;
+
+typedef ptrdiff_t friendsSize;
 
 /* Data Types */
-struct friendsParkT;
-struct friendsDataT;
-struct friendsAtomDataT;
-struct friendsVariableDataT;
-struct friendsPropositionDataT;
-struct friendsMatchDataT;
+struct friendsPark;
+struct friendsData;
+struct friendsAtomData;
+struct friendsVariableData;
+struct friendsPropositionData;
+struct friendsMatchData;
 
-struct friendsDataListT;
-struct friendsDataSetT;
-struct friendsDataSetNodeT;
+struct friendsDataList;
+struct friendsDataSet;
+struct friendsDataSetNode;
 
-struct friendsParserT;
-struct friendsLineColumnT;
+struct friendsParser;
+struct friendsLineColumn;
 
-typedef struct friendsParkT            friendsPark;
-typedef struct friendsDataT            friendsData;
-typedef struct friendsAtomDataT        friendsAtomData;
-typedef struct friendsVariableDataT    friendsVariableData;
-typedef struct friendsPropositionDataT friendsPropositionData;
-typedef struct friendsMatchDataT       friendsMatchData;
-typedef struct friendsDataListT        friendsDataList;
-typedef struct friendsDataSetT         friendsDataSet;
-typedef struct friendsDataSetNodeT     friendsDataSetNode;
+struct friendsDataFunctions;
 
-typedef struct friendsTokenDataT       friendsTokenData;
-typedef struct friendsParserT          friendsParser;
-typedef struct friendsLineColumnT      friendsLineColumn;
+struct friendsStringList;
+
+typedef struct friendsPark            friendsPark;
+typedef struct friendsData            friendsData;
+typedef struct friendsAtomData        friendsAtomData;
+typedef struct friendsVariableData    friendsVariableData;
+typedef struct friendsPropositionData friendsPropositionData;
+typedef struct friendsMatchData       friendsMatchData;
+typedef struct friendsDataList        friendsDataList;
+typedef struct friendsDataSet         friendsDataSet;
+typedef struct friendsDataSetNode     friendsDataSetNode;
+
+typedef struct friendsToken           friendsToken;
+typedef struct friendsParser          friendsParser;
+typedef struct friendsLineColumn      friendsLineColumn;
+
+typedef struct friendsDataFunctions   friendsDataFunctions;
+typedef struct friendsStringList      friendsStringList;
 
 /**
  * @typedef friendsPark
  * @brief 必要なデータを保存するのです。
  */
 /**
- * @typedef friendsData
+ * @typedef friendsObject
  * @brief データを保存するのです。
- *
- * この型には、双方向リンク機能があるのです。
  */
 /**
  * @typedef friendsAtomData
@@ -90,12 +101,24 @@ typedef struct friendsLineColumnT      friendsLineColumn;
  * @typedef friendsDataSet
  * @brief データの連想配列（のようなもの）を実現するのです。
  */
+/**
+ * @typedef friendsToken
+ * @brief Frineds 言語を分断したトークンのリストを保存するのです。
+ */
+/**
+ * @typedef friendsStringList
+ * @brief 文字列のリストなのです。
+ */
 
 /**
  * @typedef friendsHash
  * @brief データを識別するための値を保存する型なのです。
  */
-typedef unsigned int  friendsHash;
+#if defined(HAVE_UINT32_T)
+typedef uint32_t friendsHash;
+#else
+typedef unsigned int friendsHash;
+#endif
 
 /**
  * @typedef friendsChar
@@ -122,82 +145,95 @@ typedef unsigned char friendsChar;
 /* UTF-16 */
 #define FRIENDS_MAX_CHAR 2
 
-#if defined(HAVE_USHORT_T) && USHORT_T_SIZE == 2
-typedef unsigned short   friendsChar;
-#elif defined(HAVE_UINT16_T) && UINT16_T_SIZE == 2
-typedef uint16_t         friendsChar;
+#if defined(HAVE_UINT16_T)
+typedef uint16_t friendsChar;
 #else
-#error "Invalid configuration. Use UTF-8 mode."
+#error "Use UTF-8 mode"
 #endif
 #endif
 
 /**
  * @brief データの型を表すのです。
  */
-typedef enum {
+enum friendsType
+{
   friendsInvalidType,  /*!< 何もデータが入っていないのです */
   friendsAtom,         /*!< アトム */
   friendsVariable,     /*!< 変数 */
   friendsProposition,  /*!< 命題 */
 
-  friendsList,  /*!< リスト */
-  friendsSet,   /*!< セット */
+  friendsListType,  /*!< リスト */
+  friendsSetType,   /*!< セット */
 
   friendsMatch, /*!< 一致情報 */
 
-  friendsToken, /*!< パーサートークン */
-
   friendsLastType, /*!< 最後の型 */
-} friendsType;
+};
+typedef enum friendsType friendsType;
 
 /**
  * @brief アトムの型を表すのです。
  */
-typedef enum {
+enum friendsAtomType
+{
   friendsTextAtom,    /*!< 文字列 */
   friendsNumericAtom, /*!< 数値 */
   friendsNextAtom,    /*!< 「次」 */
 
   friendsLastAtomType, /*!< 最後の型 */
-} friendsAtomType;
+};
+typedef enum friendsAtomType friendsAtomType;
 
 /**
  * @brief 命題データの扱いを表すのです。
  */
-typedef enum {
+enum friendsPropositionMode
+{
   friendsPropositionNormal,  /*!< ふつうの */
   friendsPropositionStop,    /*!< たーのしー！ */
   friendsPropositionQuery,   /*!< なんだっけ？ */
-} friendsPropositionMode;
+};
+typedef enum friendsPropositionMode friendsPropositionMode;
 
 /**
  * @brief 真偽値を表すのです。
  *
  * 比較する時は列挙値と比較するのです。
  */
-typedef enum {
+enum friendsBool
+{
   friendsFalse = 0,
   friendsTrue  = 1,
-} friendsBool;
+};
+typedef int friendsBool;
 
-struct friendsFileT;
-typedef struct friendsFileT friendsFile;
+struct friendsFile;
+typedef struct friendsFile friendsFile;
 
 /**
  * @brief Friends 言語のエラーを表すのです。
  */
-typedef enum {
+enum friendsError
+{
   friendsNoError = 0,
+
+  /* Client Notifications */
+  friendsErrorBye,           /*!< さようなら */
 
   /* Friends System */
   friendsErrorInvalidType,  /*!< データの型が正しくない（値の場合は INVAL） */
   friendsErrorValidType,
                     /*!< 有効なデータ型になっている（未設定のデータが必要） */
+  friendsErrorInvalidPark,   /*!< 異なるパークに所属している */
 
   friendsErrorListIndex,     /*!< リストのインデックスが範囲外 */
   friendsErrorTooNested,     /*!< ネストが深すぎる */
+  friendsErrorSetDuplicated, /*!< セットの要素が重複している */
 
   friendsErrorNoArgument,    /*!< 命題の引数がない */
+  friendsErrorSyntax,        /*!< 文法エラー */
+
+  friendsErrorUnderscore,    /*!< 下線のあとの文字が不正 */
 
   /* POSIX System Call Errors */
   friendsError2BIG,          /*!< 引き数リストが長過ぎる */
@@ -324,16 +360,19 @@ typedef enum {
   /* Other */
   friendsErrorUnknown,       /*!< 不明なエラー */
   friendsLastError,          /*!< エラーリストの最後 */
-} friendsError;
+};
+typedef enum friendsError friendsError;
 
-typedef enum {
+enum friendsErrorLevel
+{
   friendsErrorLevelDebug = 0,
   friendsErrorLevelInfo,
   friendsErrorLevelWarning,
   friendsErrorLevelError,
   friendsErrorLevelFatal,
   friendsErrorLevelAssert,
-} friendsErrorLevel;
+};
+typedef enum friendsErrorLevel friendsErrorLevel;
 
 enum friendsFixedHashValues {
   friendsHashValueNextAtom = 0x01,
@@ -347,22 +386,26 @@ enum friendsFixedHashValues {
  * か型があってるかとか違っているとかに関わらず、とにかく同じデータで
  * はない」になるのです。
  */
-typedef enum {
+enum friendsDataCompareResult
+{
   friendsDataEqual   = 0x01, /*!< a == b */
   friendsDataGreater = 0x02, /*!< a >  b */
   friendsDataLess    = 0x04, /*!< a <  b */
-  friendsDataNotComparable = 0x00, /*!< 比較できない */
+  friendsDataNotComparable = 0x08, /*!< 比較できない */
   friendsDataNotEqual = friendsDataGreater | friendsDataLess,
   /*!< a != b */
+  friendsDataDifferentType = 0x10, /*!< typeof(a) != typeof(b) */
 
-  friendsDataCompareSpecialsMask = 0x0f, /*!< 特殊な比較をマスクするための値 */
-  friendsDataDifferentType = 0x08, /*!< typeof(a) != typeof(b) */
-  friendsDataInAnotherPark = 0x10, /*!< park(a) != park(b) */
-  friendsDataSetEqual = 0x20, /*!< 違うデータではあるが、friendsSet の中では
+  friendsDataCompareSpecialsMask = 0xff, /*!< 特殊な比較をマスクするための値 */
+  friendsDataInAnotherPark = 0x100, /*!< park(a) != park(b) */
+  friendsDataSetEqual = 0x200, /*!< 違うデータではあるが、friendsSet の中では
                                    等しいものとして扱う */
+  friendsDataObjectEqual = 0x400, /*!< 同じオブジェクトを指している */
+  friendsDataNullObject = 0x800,  /*!< 一方が NULL オブジェクトである */
 
-  friendsDataLastCompareResult = 0xff,
-} friendsDataCompareResult;
+  friendsDataLastCompareResult = 0xffff,
+};
+typedef enum friendsDataCompareResult friendsDataCompareResult;
 
 /**
  * @brief メモリを解放するための関数の形式なのです。
@@ -370,10 +413,27 @@ typedef enum {
 typedef void friendsPointerDeleter(void *);
 
 /**
+ * @brief データを削除するときの関数の形式なのです。
+ *
+ * `friendsObjectDeleter` では、渡されたメモリ空間を解放してはいけないのです。
+ */
+typedef void *friendsObjectDeleter(void *);
+
+/**
+ * @brief データの文字列表現を作成する関数の形式なのです。
+ */
+typedef friendsError friendsTextCreator(friendsChar **, void *);
+
+/**
+ * @brief データの文字列表現を削除する関数の形式なのです。
+ */
+typedef void friendsTextDeleter(friendsChar *text, void *);
+
+/**
  * @brief データの比較関数の形式なのです。
  */
-typedef friendsDataCompareResult friendsDataCompareFunc(const void *,
-                                                        const void *);
+typedef friendsDataCompareResult
+friendsDataCompareFunc(void *, void *);
 
 /**
  * @brief 普通の文字を Friends の文字に変換するエンコーダ関数の形式なのです。
@@ -401,14 +461,29 @@ typedef int friendsEncodingMaxChar(void);
  * @brief Friends 内で使う文字コードの変換関数を定義するための型なので
  *        す。
  */
-struct friendsCodeSetT {
+struct friendsCodeSet {
   friendsOneCharEncoder *one_enc; /*!< 1文字エンコーダなのです。 */
   friendsCharEncoder *enc; /*!< エンコーダなのです。 */
   friendsCharDecoder *dec; /*!< デコーダなのです。 */
   friendsEncodingMaxChar *max; /*!< 1文字の最大バイト数なのです。 */
   const char *name;        /*!< 文字コードの名前なのです。 */
 };
-typedef struct friendsCodeSetT friendsCodeSet;
+typedef struct friendsCodeSet friendsCodeSet;
+
+
+/**
+ * @brief 読み取り装置の状態を示すのです。
+ *
+ * 改行で終わる文字列を渡している限り、friendsLexerUNDERSCORE になるこ
+ * とは無いのです。
+ */
+enum friendsLexerState {
+  friendsLexerNORMAL,     /*!< 通常の状態 */
+  friendsLexerPAREN,      /*!< () の中 */
+  friendsLexerDBRACKET,   /*!< 『』の中 */
+  friendsLexerUNDERSCORE, /*!< _ の直後 */
+};
+typedef enum friendsLexerState friendsLexerState;
 
 /**
  * @brief 引数のうち、使っていないものを示すのです。
@@ -459,9 +534,7 @@ typedef int friendsFillFunc(friendsParser *p, int count, void *arg);
  *
  * 返されるポインタは、渡した名前の一部なのです。
  *
- * @note __FILE__ はコンパイラの指定によって相対パスだったり絶対パスだっ
- *       たりするけど、CMake が生成する Makefile では絶対パスになるよう
- *       なのです。
+ * @note CMake が生成する Makefile では絶対パスになるのです。
  *
  * @note この関数は表向きにパスを隠せるだけで、解析ツールを使うとパスは
  *       バレバレなので注意するのです。
@@ -479,6 +552,14 @@ const char *friendsSourceFile(const char *name);
 #define FRIENDS_SOURCE_FILE __FILE__
 #else
 #define FRIENDS_SOURCE_FILE (friendsSourceFile(__FILE__))
+#endif
+
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define friendsStaticAssert(cond,msg) \
+  _Static_assert((cond), (msg))
+#else
+#define friendsStaticAssert(cond,msg) \
+  typedef char friendsStaticAssert_##msg[(cond)?1:-1]
 #endif
 
 #endif

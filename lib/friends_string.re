@@ -7,8 +7,11 @@
 #include <stdint.h>
 #include <limits.h>
 
+#include "friends_defs.h"
 #include "friends_string.h"
 #include "friends_error.h"
+#include "friends_list.h"
+#include "friends_core.h"
 
 /*!re2c
   re2c:define:YYCTYPE = "friendsChar";
@@ -16,21 +19,48 @@
   re2c:yyfill:enable = 0;
  */
 
-size_t friendsCopyString(friendsChar *output, const friendsChar *input)
+/**
+ * @brief 文字列をコピーするのです。
+ * @param output 書き込み先をよこすのです。
+ * @param sz 書き込み先の容量をよこすのです。
+ * @return コピーした配列要素数を返すのです。
+ *
+ * NUL 文字に当たるか、sz 個コピーするのです。
+ */
+static friendsSize
+friendsCopyStringN(friendsChar *output, friendsSize sz,
+                   const friendsChar *input)
 {
-  size_t c;
+  friendsSize c, r;
 
   friendsAssert(input);
   friendsAssert(output);
 
   c = 0;
-  while((*output++ = *input++)) c++;
+  while (c < sz && (*output++ = *input++)) c++;
+  r = c;
+  while (c < sz) {
+    *output++ = 0;
+    c++;
+  }
+  return r;
+}
+
+friendsSize friendsCopyString(friendsChar *output, const friendsChar *input)
+{
+  friendsSize c;
+
+  friendsAssert(input);
+  friendsAssert(output);
+
+  c = 0;
+  while ((*output++ = *input++)) c++;
   return c;
 }
 
-size_t friendsStringArrayLength(const friendsChar *str)
+friendsSize friendsStringArrayLength(const friendsChar *str)
 {
-  size_t c;
+  friendsSize c;
   c = 0;
 
   friendsAssert(str);
@@ -39,14 +69,14 @@ size_t friendsStringArrayLength(const friendsChar *str)
   return c;
 }
 
-size_t friendsStringDuplicate(friendsChar **output,
-                              const friendsChar *fstp,
-                              const friendsChar *endp,
-                              friendsError *err)
+friendsSize
+friendsStringDuplicate(friendsChar **output,
+                       const friendsChar *fstp, const friendsChar *endp,
+                       friendsError *err)
 {
   friendsChar *s;
-  size_t n;
-  size_t i;
+  friendsSize n;
+  friendsSize i;
 
   friendsAssert(output);
   friendsAssert(fstp);
@@ -55,7 +85,7 @@ size_t friendsStringDuplicate(friendsChar **output,
     endp = fstp + friendsStringArrayLength(fstp);
   }
 
-  friendsAssert(fstp < endp);
+  friendsAssert(fstp <= endp);
 
   n = endp - fstp + 1;
   s = (friendsChar *)calloc(sizeof(friendsChar), n);
@@ -90,11 +120,11 @@ int friendsStringCompare(const friendsChar *a, const friendsChar *b)
   }
 }
 
-size_t friendsStringCharCount(const friendsChar *start,
-                              const friendsChar *end,
-                              friendsError *err)
+friendsSize friendsStringCharCount(const friendsChar *start,
+                                   const friendsChar *end,
+                                   friendsError *err)
 {
-  size_t c;
+  friendsSize c;
   const friendsChar *YYCURSOR;
   const friendsChar *YYLIMIT;
   const friendsChar *YYMARKER;
@@ -293,7 +323,7 @@ static int toHexDigit(const char *input)
 }
 
 int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
-                                     friendsError *err)
+                                 friendsError *err)
 {
   int n;
   uint_least32_t m;
@@ -554,4 +584,96 @@ const char *friendsSourceFile(const char *name)
     return NULL;
   }
   return lps;
+}
+
+struct friendsStringList
+{
+  struct friendsList list;
+  friendsSize sz;
+  friendsChar text[];
+};
+#define friendsStringListContainer(ptr) \
+  friendsListContainer(ptr, struct friendsStringList, list)
+
+friendsStringList *friendsNewStringList(friendsError *e)
+{
+  friendsStringList *l;
+  l = (friendsStringList *)friendsMalloc(sizeof(friendsStringList), e);
+  l->sz = 0;
+  return l;
+}
+
+void friendsDeleteStringList(friendsStringList *head)
+{
+  friendsStringList *pp;
+  friendsList *p, *n, *l;
+
+  if (!head) return;
+
+  l = &head->list;
+  friendsListForeachSafe(p, n, l) {
+    pp = friendsStringListContainer(p);
+    friendsStringListRemove(pp);
+  }
+  friendsStringListRemove(pp);
+}
+
+void friendsStringListRemove(friendsStringList *item)
+{
+  friendsAssert(item);
+
+  friendsListDelete(&item->list);
+  friendsFree(item);
+}
+
+friendsStringList *
+friendsStringListInsert(friendsStringList *list, const friendsChar *start,
+                        const friendsChar *end, friendsError *e)
+{
+  friendsStringList *l;
+  friendsSize sz;
+
+  friendsAssert(start);
+  friendsAssert(list);
+
+  if (end) {
+    friendsAssert(end >= start);
+    sz = end - start;
+  } else {
+    sz = friendsStringArrayLength(start);
+  }
+  sz++;
+  if (sz <= 0) {
+    friendsSetError(e, OVERFLOW);
+    return NULL;
+  }
+
+  l = (friendsStringList *)friendsMalloc(sizeof(friendsStringList) +
+                                         sizeof(friendsChar) * sz, e);
+  if (!l) {
+    return NULL;
+  }
+
+  friendsCopyStringN(&l->text, sz - 1, start);
+  l->sz = sz;
+  l->text[sz - 1] = 0;
+  return l;
+}
+
+friendsStringList *friendsStringListNext(friendsStringList *item)
+{
+  friendsAssert(item);
+  return friendsStringListContainer(friendsListNext(&item->list));
+}
+
+friendsStringList *friendsStringListPrev(friendsStringList *item)
+{
+  friendsAssert(item);
+  return friendsStringListContainer(friendsListPrev(&item->list));
+}
+
+const friendsChar *friendsStringListGetString(friendsStringList *item)
+{
+  friendsAssert(item);
+  return item->text;
 }

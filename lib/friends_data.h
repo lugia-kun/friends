@@ -28,57 +28,35 @@ friendsData *friendsNewData(friendsPark *park, friendsError *e);
 void friendsDeleteData(friendsData *d);
 
 /**
+ * @brief データを解放した初期化するのです。
+ * @param d 解放するデータをよこすのです。
+ *
+ * `d` そのものは削除しないのです。
+ * `d` そのものを削除するときは `friendsDeleteData` を使うのです。
+ */
+void friendsDataDelink(friendsData *d);
+
+/**
  * @brief データから所属するパークを得るのです。
  * @param d データをよこすのです。
  * @return パークを返すのです。d が NULL なら、我々も NULL を返すので
  *         す。
  */
-friendsPark *friendsGetPark(friendsData *d);
+friendsPark *friendsGetPark(const friendsData *d);
 
 /**
  * @brief データの種類を得るのです。
  * @param d データをよこすのです。
- * @return データの種類を返すのです。d が NULL なら、我々は
- *         friendsInvalidType を返すのです。
+ * @return データの種類を返すのです。
  */
-friendsType friendsGetType(friendsData *d);
+friendsType friendsGetType(const friendsData *d);
 
 /**
  * @brief データのハッシュ値を得るのです。
  * @param d データをよこすのです。
  * @return ハッシュ値を返すのです。
- *
- * この関数は基本的にはデバッグ向きなのです。
  */
-friendsHash friendsGetHash(friendsData *d);
-
-/**
- * @brief データをセットするのです。
- * @param dest 設定するデータをよこすのです。
- * @param type データの種類をよこすのです。
- * @param data 追加データをよこすのです。
- * @param data_deleter データの削除関数をよこすのです。
- * @param comp_func 比較関数をよこすのです。
- * @param text データを表す文字列をよこすのです。
- * @param text_deleter text を削除する関数をよこすのです。
- * @param hash ハッシュ値をよこすのです。
- * @param allow_replace 他の同じ型のデータを置き換えることを許可するの
- *        です。
- * @param err NULL でなければ、そこにエラーの情報を書き込むのです。
- * @return 成功なら dest を、失敗なら NULL を返すのです。
- *
- * この関数は内部用なのです。
- *
- * 削除関数は自動削除して欲しくなければ NULL をよこすのです。
- */
-friendsData *friendsSetData(friendsData *dest, friendsType type,
-                            void *data, friendsPointerDeleter *data_deleter,
-                            friendsDataCompareFunc *comp_func,
-                            friendsChar *text,
-                            friendsPointerDeleter *text_deleter,
-                            friendsHash hash,
-                            friendsBool allow_replace,
-                            friendsError *err);
+friendsHash friendsGetHash(const friendsData *d);
 
 /**
  * @brief データに入っている文字列を得るのです。
@@ -87,6 +65,16 @@ friendsData *friendsSetData(friendsData *dest, friendsType type,
  *         を返すのです。それ以外の場合はたぶん NULL を返すのです。
  */
 const friendsChar *friendsDataToText(friendsData *d);
+
+/**
+ * @brief データをコピーするのです。
+ * @param dest コピー先をよこすのです。
+ * @param src コピー元をよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return dest を返すのです。失敗した時は、NULL を返すのです。
+ */
+friendsData *friendsDataCopy(friendsData *dest, const friendsData *src,
+                             friendsError *e);
 
 /**
  * @brief データ同士の比較を行うのです。
@@ -101,8 +89,8 @@ const friendsChar *friendsDataToText(friendsData *d);
  * 通常の比較では `friendsDataEqual` とかの単体と比較すれば良いと思う
  * のです。
  */
-friendsDataCompareResult friendsDataCompare(const friendsData *a,
-                                            const friendsData *b);
+friendsDataCompareResult
+friendsDataCompare(const friendsData *a, const friendsData *b);
 
 /**
  * @brief 数値をハッシュするのです。
@@ -152,20 +140,230 @@ friendsHash friendsHashBinary(const void *s, const void *e);
  * @param x 比較結果をよこすのです。
  * @return 等しければ 1 を返すのです。等しくなければ 0 を返すのです。
  */
-int friendsDataCompareIsEqual(friendsDataCompareResult x);
+static inline
+int friendsDataCompareIsEqual(friendsDataCompareResult x)
+{
+  return x == friendsDataEqual;
+}
 
 /**
  * @brief 比較結果が等しくないか調べるのです。
  * @param x 比較結果をよこすのです。
  * @return 等しくなければ 1 を返すのです。等しければ 0 を返すのです。
  */
-int friendsDataCompareIsNotEqual(friendsDataCompareResult x);
+static inline
+int friendsDataCompareIsNotEqual(friendsDataCompareResult x)
+{
+  return (x != friendsDataEqual);
+}
 
 /**
  * @brief 比較結果が Set 用の比較で等しいか調べるのです。
  * @param x 比較結果をよこすのです。
  * @return 等しければ 1 を返すのです。等しくなければ 0 を返すのです。
  */
-int friendsDataCompareIsSetEqual(friendsDataCompareResult x);
+static inline
+int friendsDataCompareIsSetEqual(friendsDataCompareResult x)
+{
+  return friendsDataCompareIsEqual(x) || ((x & friendsDataSetEqual) > 0);
+}
+
+/**
+ * @brief 新しいリストを作るのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 作ったリストを返すのです。エラーの時は NULL を返すのです。
+ *
+ * この関数は「頭」を返すのです。
+ */
+friendsDataList *friendsNewDataList(friendsError *e);
+
+/**
+ * @brief 項目がデータか「頭」かを調べるのです。
+ * @param item 調べる項目をよこすのです。
+ * @return 項目が「頭」なら friendsTrue を返すのです。
+ */
+friendsBool friendsDataListIsHead(friendsDataList *item);
+
+/**
+ * @brief リストから項目を一つ消すのです。
+ * @param item 消す項目をよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ *
+ * `item` に「頭」を渡された時は、何もせず、`e` に `friendsErrorINVAL`
+ * を設定するのです。
+ */
+void friendsDataListDelete(friendsDataList *item, friendsError *e);
+
+/**
+ * @brief リストの項目をすべて消すのです。
+ * @param list 消すリストをよこすのです。
+ */
+void friendsDataListDeleteAll(friendsDataList *list);
+
+/**
+ * @brief リストが空かどうかを返すのです。
+ * @param list チェックするリストをよこすのです。
+ * @return リストが空なら friendsTrue を、空でなければ friendsFalse を返
+ * すのです。
+ */
+friendsBool friendsDataListIsEmpty(friendsDataList *list);
+
+/**
+ * @brief リストに項目を追加するのです。
+ * @param item 追加する場所をよこすのです。
+ * @param data 追加するデータをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 追加したリストの項目か、失敗した場合は NULL を返すのです。
+ *
+ * `item` の前に `data` を追加するのです。
+ *
+ * `item` が「頭」の場合は `friendsListAppend` と同じなのです。
+ */
+friendsDataList *
+friendsDataListInsert(friendsDataList *item, const friendsData *data,
+                      friendsError *e);
+
+/**
+ * @brief リストに項目を追加するのです。
+ * @param item 追加する場所をよこすのです。
+ * @param data 追加するデータをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 追加したリストの項目か、失敗した場合は NULL を返すのです。
+ *
+ * `item` の後に `data` を追加するのです。
+ *
+ * `item` が「頭」の場合は `friendsListPrepend` と同じなのです。
+ */
+friendsDataList *
+friendsDataListInsertAfter(friendsDataList *item, const friendsData *data,
+                           friendsError *e);
+
+/**
+ * @brief リストに項目を追加するのです。
+ * @param list 追加するリストをよこすのです。
+ * @param data 追加するデータをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 追加したリストの項目か、失敗した場合は NULL を返すのです。
+ *
+ * `list` の最後に `data` を追加するのです。
+ */
+friendsDataList *
+friendsDataListAppend(friendsDataList *list, const friendsData *data,
+                      friendsError *e);
+
+/**
+ * @brief リストに項目を追加するのです。
+ * @param list 追加するリストをよこすのです。
+ * @param data 追加するデータをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 追加したリストの項目か、失敗した場合は NULL を返すのです。
+ *
+ * `list` の最初に `data` を追加するのです。
+ */
+friendsDataList *
+friendsDataListPrepend(friendsDataList *list, const friendsData *data,
+                       friendsError *e);
+
+/**
+ * @brief リストの次を返すのです。
+ * @param item 次を求める項目をよこすのです。
+ * @return 次の項目を返すのです。最後の場合は NULL を返すのです。
+ */
+friendsDataList *friendsDataListNext(friendsDataList *item);
+
+/**
+ * @brief リストの次を返すのです。
+ * @param item 次を求める項目をよこすのです。
+ * @return 前の項目を返すのです。最初の場合は NULL を返すのです。
+ */
+friendsDataList *friendsDataListPrev(friendsDataList *item);
+
+/**
+ * @brief リストの頭を返すのです。
+ * @param item 「頭」を求める項目をよこすのです。
+ * @return 「頭」を返すのです。
+ */
+friendsDataList *friendsDataListHead(friendsDataList *item);
+
+/**
+ * @brief 項目のデータを返すのです。
+ * @param item 求める項目をよこすのです。
+ * @return データを返すのです。
+ *
+ * 返すポインタの内容を変更してはいけないのです。
+ */
+friendsData *friendsDataListGetData(friendsDataList *item);
+
+/**
+ * @brief 先頭のデータを返すのです。
+ * @param list 求める項目をよこすのです。
+ * @return 先頭へのポインタを返すのです。
+ */
+friendsDataList *friendsDataListBegin(friendsDataList *list);
+
+/**
+ * @brief 末尾のデータを返すのです。
+ * @param list 求める項目をよこすのです。
+ * @return 末尾へのポインタを返すのです。
+ */
+friendsDataList *friendsDataListEnd(friendsDataList *list);
+
+/**
+ * @brief リストの各要素をリストに追加するのです。
+ * @param dest 挿入する位置をよこすのです。
+ * @param srcst 追加するリストの最初の要素をよこすのです。
+ * @param srced 追加するリストの最後の要素をよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 成功した時は、`dest` のリストでの `srcst` にあたる要素を返す
+ *         のです。失敗した時は、NULL を返すのです。
+ *
+ * `dest` が「頭」ならば、リストの最後に追加するのです。
+ *
+ * `srcst` が「頭」ならば、リストの先頭からコピーするのです。
+ * `srced` が NULL や「頭」ならば、リストの最後までコピーするのです。
+ *
+ * もし `srcst` の後続に `srced` がなかった場合、エラーになるのです。
+ */
+friendsDataList *
+friendsDataListInsertList(friendsDataList *dest,
+                          friendsDataList *srcst, friendsDataList *srced,
+                          friendsError *e);
+
+/**
+ * @brief リストを複製するのです。
+ * @param list 複製するリストをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 成功した時は、複製したリストを、失敗した時は、NULL を返すのです。
+ *
+ * 返すポインタは `list` にかかわらず「頭」になるのです。
+ */
+friendsDataList *
+friendsDataListDuplicate(friendsDataList *list, friendsError *e);
+
+/**
+ * @brief データにリストを設定するのです。
+ * @param data データをよこすのです。
+ * @param list 設定するリストをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return 成功した時は `data` を、失敗した時は NULL を返すのです。
+ *
+ * `list` は「頭」でなくても良いですが、設定するのは「頭」なのです。別の
+ * 言い方をすれば、リスト中の「位置」を設定することはできないのです。
+ *
+ * 設定する際、リストのコピーを作るので、この関数に渡した `list` とは独
+ * 立するのです。
+ */
+friendsData *friendsSetList(friendsData *data, friendsDataList *list,
+                            friendsError *e);
+
+/**
+ * @brief データに入っているリストを取り出すのです。
+ * @param data データをよこすのです。
+ * @param e もし NULL でなければ、そこにエラーの情報を書き込むのです。
+ * @return リストデータを返すのです。
+ *
+ * 返されたリストに対して `friendsDataListDeleteAll` を呼び出すと
+ */
+friendsDataList *friendsGetList(friendsData *data, friendsError *e);
 
 #endif /* FRIENDS_DATA_H */

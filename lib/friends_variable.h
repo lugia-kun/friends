@@ -24,11 +24,8 @@ const friendsVariableData *friendsGetVariable(friendsData *d);
  * @param tail 後続を省略する時、friendsTrue をよこすのです。
  * @param e    NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return よこしたデータを返すのです。
- *
- * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に
- * 捨てられるのです。
  */
-friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
+friendsData *friendsSetVariable(friendsData *dest, const friendsChar *text,
                                 friendsBool tail, friendsError *e);
 
 /**

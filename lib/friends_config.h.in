@@ -7,21 +7,18 @@
 
 #cmakedefine HAVE_USHORT_T
 #cmakedefine HAVE_UINT16_T
+#cmakedefine HAVE_UINT32_T
+
+#cmakedefine HAVE_MAX_ALIGN_T
 
 #cmakedefine FRIENDS_USE_UTF8_INTERNAL
 #cmakedefine USE_POSIX_KILL
-
-#ifdef HAVE_USHORT_T
-#define USHORT_T_SIZE @USHORT_T@
-#endif
-#ifdef HAVE_UINT16_T
-#define UINT16_T_SIZE @UINT16_T@
-#endif
 
 #ifndef WIN32
 #cmakedefine WIN32
 #endif
 
+#cmakedefine FRIENDS_ENABLE_LIBEDIT
 #cmakedefine FRIENDS_ENABLE_FULLPATH_SOURCE_NAME
 
 #cmakedefine FRIENDS_ENABLE_SJIS

@@ -7,309 +7,361 @@
 #include "friends_error.h"
 #include "friends_set.h"
 #include "friends_struct_data.h"
+#include "friends_rbtree.h"
 #include "friends_list.h"
 #include "friends_core.h"
 #include "friends_data.h"
-#include "friends_set.h"
 #include "friends_string.h"
 #include "friends_atom.h"
+#include "friends_variable.h"
+#include "friends_proposition.h"
+#include "friends_data_private.h"
 
-enum {
-  friendsCharMax     = UCHAR_MAX,
-  friendsDataSetSize = friendsCharMax + 1,
+struct friendsDataSet
+{
+  friendsDataSetNode *root;
 };
 
-friendsDataSetHash friendsSmallHash(friendsHash h)
+struct friendsDataSetNode
 {
-  friendsDataSetHash o = 0x00;
-  int i;
-  enum {
-    ASIZE = ((sizeof(friendsHash) - 1) / sizeof(friendsDataSetHash) + 1)
-  };
-  union {
-    friendsHash h;
-    friendsDataSetHash d[ASIZE];
-  } t;
+  friendsRbTree tree; /*!< ツリー */
+  friendsList list;   /*!< リスト */
+  friendsData data;   /*!< データ */
+};
 
-  memset(t.d, 0, sizeof(friendsDataSetHash) * ASIZE);
-  t.h = h;
-  for (i = 0; i < ASIZE; ++i) {
-    o = o ^ (t.d[i] * 11 * (i + 1) + 6);
-  }
-  return o;
-}
+#define friendsSetTreeContainer(ptr)                            \
+  friendsRbTreeContainer(ptr, struct friendsDataSetNode, tree)
+
+#define friendsSetListContainer(ptr)                            \
+  friendsListContainer(ptr, struct friendsDataSetNode, list)
 
 friendsDataSet *friendsNewSet(friendsError *e)
 {
   friendsDataSet *set;
-  friendsDataSetNode **table;
 
-  set = (friendsDataSet *)calloc(sizeof(friendsDataSet), 1);
+  set = (friendsDataSet *)friendsMalloc(sizeof(friendsDataSet), e);
   if (!set) {
-    friendsSetError(e, NOMEM);
     return NULL;
   }
 
-  table = (friendsDataSetNode **)calloc(sizeof(friendsDataSetNode *),
-                                        friendsDataSetSize);
-  if (!table) {
-    friendsSetError(e, NOMEM);
-    free(set);
-    return NULL;
-  }
-
-  set->table = table;
+  set->root = NULL;
   return set;
+}
+
+static friendsData *friendsSetGetData(friendsDataSetNode *n)
+{
+  friendsAssert(n);
+  return &n->data;
+}
+
+static int
+friendsSetTreeCompare(friendsRbTree *x, friendsRbTree *y)
+{
+  friendsDataSetNode *nx;
+  friendsDataSetNode *ny;
+  friendsData *dx;
+  friendsData *dy;
+  friendsHash hx;
+  friendsHash hy;
+  friendsDataCompareResult cres;
+
+  nx = friendsSetTreeContainer(x);
+  ny = friendsSetTreeContainer(y);
+  dx = friendsSetGetData(nx);
+  dy = friendsSetGetData(ny);
+  hx = friendsGetHash(dx);
+  hy = friendsGetHash(dy);
+
+  if (hx != hy) {
+    return hy - hx;
+  }
+
+  cres = friendsDataCompare(dx, dy);
+
+  if (cres & friendsDataDifferentType) {
+    friendsType tx, ty;
+
+    tx = friendsGetType(dx);
+    ty = friendsGetType(dy);
+    if (tx != ty) {
+      return ty - tx;
+    }
+  }
+  if (friendsDataCompareIsSetEqual(cres)) {
+    return 0;
+  }
+  if (cres == friendsDataGreater) {
+    return -1;
+  }
+  if (cres == friendsDataLess) {
+    return  1;
+  }
+
+  if (dx->object > dy->object) {
+    return 1;
+  } else if (dx->object == dy->object) {
+    return 0;
+  } else {
+    return -1;
+  }
+}
+
+void friendsSetDeleteNode(friendsDataSet *set, friendsDataSetNode *n)
+{
+  friendsList *ln;
+  friendsRbTree *r;
+  friendsDataSetNode *new_node;
+
+  friendsAssert(set);
+  friendsAssert(n);
+  friendsAssert(set->root);
+
+  new_node = NULL;
+  if (!friendsListIsEmpty(&n->list)) {
+    ln = friendsListNext(&n->list);
+    new_node = friendsSetListContainer(ln);
+  }
+  if (n->tree.parent) {
+    r = friendsRbTreeDelete(&set->root->tree, &n->tree);
+    if (new_node) {
+      r = friendsRbTreeInsert(r, &new_node->tree, friendsSetTreeCompare);
+      friendsAssert(r);
+    }
+    set->root = friendsSetTreeContainer(r);
+  }
+
+  friendsDataDelink(&n->data);
+  friendsFree(n);
 }
 
 void friendsDeleteSet(friendsDataSet *set)
 {
-  friendsDataSetNode *n, *p;
-  int i;
-
   if (!set) return;
 
-  if (set->table) {
-    for (i = 0; i < friendsDataSetSize; ++i) {
-      n = set->table[i];
-      while (n) {
-        if (n->list) friendsDeleteList(n->list);
-        p = n->next;
-        free(n);
-        n = p;
-      }
-    }
-    free(set->table);
+  while (set->root) {
+    friendsSetDeleteNode(set, set->root);
   }
 
-  free(set);
+  friendsFree(set);
 }
 
-static friendsData *friendsSetGetData(friendsDataSetNode *n,
-                                      friendsDataList **l)
+static void
+friendsSetNodeInit(friendsDataSetNode *n)
 {
-  friendsDataList *ll;
+  friendsAssert(n);
 
-  if (!n) return NULL;
-  ll = n->list;
-  if (!ll) return NULL;
-  if (l) *l = ll;
-  if (friendsListIsParent(ll)) ll = friendsListNext(ll);
-  return friendsListData(ll);
+  friendsRbTreeInit(&n->tree);
+  n->tree.parent = NULL;
+  friendsListInit(&n->list);
+  friends_DataInit(&n->data);
 }
 
-friendsBool  friendsSetContains(friendsDataSet *set, friendsData *d)
+static void
+friendsSetNodeSetData(friendsDataSetNode *n, const friendsData *d,
+                      friendsError *e)
 {
-  friendsDataSetHash h;
-  friendsDataSetNode *n;
-  friendsDataList *l;
-  friendsData *c;
+  friendsDataCopy(&n->data, d, e);
+}
+
+friendsDataSetNode *
+friendsSetFindByNode(friendsDataSet *set, friendsDataSetNode *node)
+{
+  friendsRbTree *t;
 
   friendsAssert(set);
-  friendsAssert(set->table);
+  friendsAssert(node);
+
+  if (!set->root) return NULL;
+
+  t = friendsRbTreeFind(&set->root->tree, &node->tree, friendsSetTreeCompare);
+  if (!t) return NULL;
+
+  return friendsSetTreeContainer(t);
+}
+
+friendsDataSetNode *
+friendsSetFindByData(friendsDataSet *set, const friendsData *d)
+{
+  friendsDataSetNode n;
+  friendsDataSetNode *ret;
+
   friendsAssert(d);
 
-  h = friendsSmallHash(d->hash);
+  friendsSetNodeInit(&n);
+  friendsSetNodeSetData(&n, d, NULL);
 
-  n = set->table[h];
-  if (!n) return friendsFalse;
+  ret = friendsSetFindByNode(set, &n);
 
-  for (; n; n = n->next) {
-    c = friendsSetGetData(n, &l);
-    if (!c) continue;
-    if (c == d) return friendsTrue;
-    if (c->hash != d->hash) continue;
-    l = friendsListNext(l);
-    for (; l; l = friendsListNext(l)) {
-      c = friendsListData(l);
-      if (c == d) return friendsTrue;
-    }
-  }
-  return friendsFalse;
+  friendsDataDelink(&n.data);
+
+  return ret;
 }
 
-friendsDataList *friendsSetFindText(friendsDataSet *set,
-                                    friendsType type, const friendsChar *text)
+friendsDataSetNode *
+friendsSetFindByText(friendsDataSet *set, friendsType type,
+                     const friendsChar *text, friendsError *e)
 {
-  friendsDataSetNode *n;
-  friendsDataSetHash h;
-  friendsDataList *l;
-  friendsData *c;
-  friendsHash hsh;
-  const friendsChar *tx;
+  friendsData t;
+  friendsData *retd;
+  friendsPark *park;
+  friendsDataSetNode *ret;
 
   friendsAssert(set);
-  friendsAssert(set->table);
-  friendsAssert(text);
 
-  hsh = friendsHashString(text, NULL);
-  h = friendsSmallHash(hsh);
+  if (!set->root) return NULL;
 
-  n = set->table[h];
-  if (!n) return NULL;
+  park = friendsGetPark(&set->root->data);
+  if (!park) return NULL;
 
-  for (; n; n = n->next) {
-    c = friendsSetGetData(n, &l);
-    if (!c) continue;
-    if (c->hash != hsh) continue;
-    if (c->type != type) continue;
-    tx = friendsDataToText(c);
-    if (!tx) continue;
-    if (friendsStringCompare(tx, text) == 0) {
-      return l;
-    }
-  }
-  return NULL;
-}
+  friends_DataInit(&t);
+  t.park = park;
 
-friendsDataList *friendsSetFindNumericAtom(friendsDataSet *set, int a)
-{
-  friendsDataSetNode *n;
-  friendsDataSetHash h;
-  friendsDataList *l;
-  friendsData *c;
-  const friendsAtomData *at;
-  friendsHash hsh;
-  friendsError e;
-  int r;
-
-  friendsAssert(set);
-  friendsAssert(set->table);
-
-  hsh = friendsHashNumeral(a);
-  h = friendsSmallHash(hsh);
-
-  n = set->table[h];
-  if (!n) return NULL;
-
-  for (; n; n = n->next) {
-    c = friendsSetGetData(n, &l);
-    if (!c) continue;
-    at = friendsGetAtom(c);
-    if (!at) continue;
-    e = friendsNoError;
-    r = friendsGetAtomNumber(at, &e);
-    if (friendsAnyError(e)) continue;
-    if (r == a) return l;
-  }
-  return NULL;
-}
-
-void friendsSetInsert(friendsDataSet *set, friendsData *d, friendsError *e)
-{
-  friendsHash hsh;
-  friendsDataSetNode *n;
-  friendsDataSetHash h;
-  friendsDataList *l;
-  friendsData *c;
-  const friendsChar *ct, *dt;
-  const friendsAtomData *ca, *da;
-  int ci, di;
-  friendsError ce, de;
-
-  friendsAssert(d);
-  friendsAssert(set);
-  friendsAssert(set->table);
-
-  hsh = friendsGetHash(d);
-  h = friendsSmallHash(hsh);
-  n = set->table[h];
-  for (; n; n = n->next) {
-    c = friendsSetGetData(n, &l);
-    if (!c) continue;
-    if (friendsGetHash(c) != hsh) continue;
-    if (friendsGetType(c) != friendsGetType(d)) continue;
-    ct = friendsDataToText(c);
-    dt = friendsDataToText(d);
-    if (ct && dt) {
-      if (ct == dt) break;
-      if (friendsStringCompare(ct, dt) == 0) break;
-    } else {
-      ca = friendsGetAtom(c);
-      da = friendsGetAtom(d);
-      if (ca && ca == da) break;
-      if (ca && da) {
-        ce = de = friendsNoError;
-        ci = friendsGetAtomNumber(ca, &ce);
-        di = friendsGetAtomNumber(da, &de);
-        if (friendsAnyError(ce) || friendsAnyError(de)) {
-        } else if (ci == di) {
-          break;
-        }
-      }
-    }
-  }
-  if (!n) {
-    n = (friendsDataSetNode *)calloc(sizeof(friendsDataSetNode), 1);
-    if (!n) {
-      friendsSetError(e, NOMEM);
-      return;
-    }
-    l = friendsNewList(e);
-    if (!l) {
-      free(n);
-      return;
-    }
-    n->list = l;
-    n->root = set;
-    n->next = set->table[h];
-    set->table[h] = n;
-  }
-  friendsAssert(l);
-  friendsListAppend(l, d, e);
-}
-
-void friendsSetRemove(friendsDataSet *set, friendsData *d, friendsError *e)
-{
-  friendsDataList *l;
-  friendsHash hsh;
-  friendsDataSetHash h;
-  friendsDataSetNode *n;
-  friendsData *c;
-
-  friendsAssert(set);
-  friendsAssert(d);
-
-  hsh = friendsGetHash(d);
-  h = friendsSmallHash(hsh);
-  n = set->table[h];
-  for (; n; n = n->next) {
-    c = friendsSetGetData(n, &l);
-    if (!c) continue;
-    if (friendsGetHash(c) != hsh) continue;
-    l = friendsListFind(l, d);
-    if (l) {
-      friendsListRemove(l);
-    }
+  switch(type) {
+  case friendsAtom:
+    retd = friendsSetTextAtom(&t, text, e);
+    break;
+  case friendsProposition:
+    retd = friendsSetProposition(&t, text, NULL, NULL,
+                                 friendsPropositionNormal, e);
+    break;
+  case friendsVariable:
+    retd = friendsSetVariable(&t, text, friendsFalse, e);
+    break;
+  default:
+    friendsUnreachable();
+    friendsSetError(e, InvalidType);
+    retd = NULL;
     break;
   }
+  if (!retd) {
+    return NULL;
+  }
+
+  ret = friendsSetFindByData(set, &t);
+
+  friendsDataDelink(&t);
+
+  return ret;
 }
 
-void friendsSetRemoveAll(friendsDataSet *set, friendsData *d, friendsError *e)
+friendsDataSetNode *
+friendsSetFindNumericAtom(friendsDataSet *set, int a, friendsError *e)
 {
-  friendsDataList *l, *p;
+  friendsData t;
+  friendsPark *park;
+  friendsDataSetNode *ret;
+
+  friendsAssert(set);
+  friendsAssert(a >= 0);
+
+  if (!set->root) return NULL;
+
+  park = friendsGetPark(&set->root->data);
+  if (!park) return NULL;
+
+  friends_DataInit(&t);
+  t.park = park;
+
+  if (!friendsSetNumeralAtom(&t, a, e)) {
+    return NULL;
+  }
+
+  ret = friendsSetFindByData(set, &t);
+
+  friendsDataDelink(&t);
+
+  return ret;
+}
+
+static friendsDataSetNode *
+friendsSetInsertCommon(friendsDataSet *set, friendsData *d,
+                       friendsBool allow_duplicate, friendsError *e)
+{
   friendsDataSetNode *n;
-  int i;
+  friendsDataSetNode *p;
+  friendsPark *park;
+  friendsRbTree *root;
 
   friendsAssert(set);
   friendsAssert(d);
 
-  for (i = 0; i < friendsDataSetSize; ++i) {
-    n = set->table[i];
-    for (; n; n = n->next) {
-      l = n->list;
-      if (!l) continue;
-      while ((l = friendsListFind(l, d))) {
-        p = friendsListNext(l);
-        friendsListRemove(l);
-        l = p;
-      }
+  n = (friendsDataSetNode *)friendsMalloc(sizeof(friendsDataSetNode), e);
+  if (!n) return NULL;
+
+  friendsSetNodeInit(n);
+  friendsSetNodeSetData(n, d, NULL);
+
+  p = friendsSetFindByNode(set, n);
+  if (p) {
+    if (allow_duplicate == friendsTrue) {
+      friendsListInsertPrev(&p->list, &n->list);
+    } else {
+      friendsSetError(e, SetDuplicated);
+      friendsDataDelink(&n->data);
+      friendsFree(n);
+      n = NULL;
     }
+  } else {
+    root = &set->root->tree;
+    root = friendsRbTreeInsert(root, &n->tree, friendsSetTreeCompare);
+    set->root = friendsSetTreeContainer(root);
   }
+  return n;
+}
+
+friendsDataSetNode *
+friendsSetInsert(friendsDataSet *set, friendsData *d, friendsError *e)
+{
+  return friendsSetInsertCommon(set, d, friendsFalse, e);
+}
+
+friendsDataSetNode *
+friendsSetInsertMulti(friendsDataSet *set, friendsData *d, friendsError *e)
+{
+  return friendsSetInsertCommon(set, d, friendsTrue, e);
+}
+
+friendsDataSetNode *
+friendsSetNodeNext(friendsDataSetNode *n)
+{
+  return friendsSetListContainer(friendsListNext(&n->list));
+}
+
+void friendsSetRemove(friendsDataSet *set, friendsData *d)
+{
+  friendsDataSetNode *n;
+
+  friendsAssert(set);
+  friendsAssert(d);
+
+  n = friendsSetFindByData(set, d);
+  if (!n) return;
+
+  friendsSetDeleteNode(set, n);
+}
+
+void friendsSetRemoveAll(friendsDataSet *set, friendsData *d)
+{
+  friendsDataSetNode *n;
+  friendsList *l, *ln, *lp;
+
+  friendsAssert(set);
+  friendsAssert(d);
+
+  n = friendsSetFindByData(set, d);
+  if (!n) return;
+
+  l = &n->list;
+  friendsListForeachSafe(lp, ln, l) {
+    friendsDataSetNode *nn;
+    nn = friendsSetListContainer(lp);
+    friendsSetDeleteNode(set, nn);
+  }
+  friendsSetDeleteNode(set, n);
 }
 
 void friendsSetEach(friendsDataSet *set,
-                    friendsBool (*f)(friendsDataList *list, void *a),
+                    friendsBool (*f)(friendsDataSet *node, void *a),
                     void *a)
 {
   friendsDataList *l;

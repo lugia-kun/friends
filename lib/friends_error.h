@@ -24,9 +24,9 @@
  * て最適化を行うのです。
  */
 #ifdef __GNUC__
-#define friendsExpect(cond, var) (__builtin_expect((cond), (var)))
+#define friendsExpect(cond) (__builtin_expect(!!(cond), 1))
 #else
-#define friendsExpect(cond, var) (cond)
+#define friendsExpect(cond) (cond)
 #endif
 
 /**
@@ -112,7 +112,7 @@ void friendsUnreachableImplement(const char *fname,
 #else
 #define friendsAssert(cond)                              \
   do {                                                   \
-    if (friendsExpect(!!(cond), 1) != 1)                 \
+    if (!friendsExpect((cond)))                          \
       friendsAssertImplement(#cond, FRIENDS_SOURCE_FILE, \
                              __LINE__, __func__);        \
   } while(0)

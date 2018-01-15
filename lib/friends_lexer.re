@@ -11,7 +11,6 @@
 #include "friends_error.h"
 #include "friends_string.h"
 #include "friends_grammer.h"
-#include "friends_list.h"
 #include "friends_token.h"
 
 /*!re2c
@@ -24,26 +23,32 @@ static void friendsLexerFill(friendsParser *p, size_t reqs) {
   const friendsChar *lexeme;
   const friendsChar *t;
   friendsChar *newp;
-  friendsDataList *ep;
+  friendsStringList *ep;
+  friendsStringList *l;
 
   lexeme = NULL;
 
   if (p->bufp) {
-    friendsAssert(p->listcur);
-    p->listcur = friendsListNext(p->listcur);
+    if (p->listcur || p->listcur != p->buffer_list) {
+      /* p->listcur = friendsStringListNext(p->listcur); */
+    } else {
+      p->listcur = friendsStringListNext(p->buffer_list);
+    }
+
+    friendsAssert(p->cur);
 
     lexeme = p->cur;
     if (p->token  && p->token < lexeme)  lexeme = p->token;
     if (p->stoken && p->stoken < lexeme) lexeme = p->stoken;
-    if (p->mark   && p->mark < lexeme) lexeme = p->mark;
-    if (p->cmark  && p->cmark < lexeme) lexeme = p->cmark;
+    if (p->mark   && p->mark < lexeme)   lexeme = p->mark;
+    if (p->cmark  && p->cmark < lexeme)  lexeme = p->cmark;
 
     uses = friendsStringArrayLength(lexeme);
 
   } else {
     /* 初期化するのです */
-    if (!p->listcur) {
-      p->listcur = friendsListBegin(p->buffer_list);
+    if (!p->listcur || p->listcur == p->buffer_list) {
+      p->listcur = friendsStringListNext(p->buffer_list);
     }
 
     uses = 0;
@@ -55,10 +60,13 @@ static void friendsLexerFill(friendsParser *p, size_t reqs) {
   ep = p->listcur;
 
   c = 0;
-  for (; ep; ep = friendsListNext(ep)) {
-    t = (const friendsChar *)friendsListData(ep);
+  for (; ep != p->buffer_list; ep = friendsStringListNext(ep)) {
+    t = friendsStringListGetString(ep);
     c += friendsStringArrayLength(t);
     if (c >= reqs) break;
+  }
+  if (ep != p->buffer_list) {
+    ep = friendsStringListNext(ep);
   }
 
   reqs = uses;
@@ -75,21 +83,23 @@ static void friendsLexerFill(friendsParser *p, size_t reqs) {
   }
   if (lexeme && lexeme != newp) {
     memmove(newp, lexeme, sizeof(friendsChar) * uses);
-    uses = uses + 1;
   }
   while (1) {
-    if (!p->listcur) break;
-    t = (const friendsChar *)friendsListData(p->listcur);
+    t = friendsStringListGetString(p->listcur);
 
     friendsCopyString(newp + uses, t);
     uses += friendsStringArrayLength(t);
+    l = friendsStringListNext(p->listcur);
 
-    if (p->listcur == ep) break;
-    p->listcur = friendsListNext(p->listcur);
+    friendsStringListRemove(p->listcur);
+
+    p->listcur = l;
+    if (l == ep) break;
   }
   newp[uses] = 0;
 
   p->limit = newp + uses;
+  if (p->cur)    p->cur = newp + (p->cur - lexeme);
   if (p->token)  p->token = newp + (p->token - lexeme);
   if (p->stoken) p->stoken = newp + (p->stoken - lexeme);
   if (p->mark)   p->mark = newp + (p->mark - lexeme);
@@ -106,33 +116,36 @@ static void friendsLexerAddToken(friendsParser *p, int type)
 {
   size_t n;
   friendsChar *ch;
-  friendsData *d, *ret;
-  friendsDataList *l;
+  friendsToken *d;
 
   friendsAssert(p);
   friendsAssert(p->park);
   friendsAssert(p->token);
+  friendsAssert(p->tokens);
   friendsAssert(p->cur);
 
   if (type >= 0) {
     p->last_type = type;
-    d = friendsNewData(p->park, &p->err);
+    d = friendsTokenAppend(p->tokens, type, p->token, p->cur,
+                           p->tokpos.line, p->tokpos.column, &p->err);
     if (!d) return;
-
-    n = friendsStringDuplicate(&ch, p->token, p->cur, &p->err);
-    if (n == (size_t)-1) return;
-
-    ret = friendsSetToken(d, ch, type, p->tokpos.line, p->tokpos.column,
-                          &p->err);
-    if (!ret) {
-      free(ch);
-      return;
-    }
-
-    l = friendsListAppend(p->tokens, d, &p->err);
-    if (!l) return;
   }
   p->token = NULL;
+}
+
+void friendsChangeLastTokenIf(friendsParser *p, int from, int to)
+{
+  friendsToken *token;
+
+  friendsAssert(p);
+  friendsASsert(p->tokens);
+
+  token = friendsTokenPrev(p->tokens);
+  if (token != p->tokens) {
+    if (friendsTokenType(token) == from) {
+      friendsSetTokenType(token, to);
+    }
+  }
 }
 
 static void friendsLexerControlPos(friendsParser *p, friendsBool newline)
@@ -140,18 +153,33 @@ static void friendsLexerControlPos(friendsParser *p, friendsBool newline)
   const friendsChar *start;
   const friendsChar *YYCURSOR;
   size_t n;
+  size_t nl;
 
   if (newline == friendsTrue) {
+    YYCURSOR = p->token;
+    nl = 0;
     while (YYCURSOR < p->cur) {
       /*!re2c
         re2c:yyfill:enable = 0;
 
-        *    { continue; }
-        "\n" { start = YYCURSOR; p->curpos.line += 1; continue; }
+        *      { continue; }
+        "\n"   { goto nl; }
+        "\r\n" { goto nl; }
+        "\r"   { goto nl; }
       */
       friendsUnreachable();
+
+    nl:
+      nl++;
+      start = YYCURSOR;
+      continue;
     }
-    p->curpos.column = 0;
+    if (nl > 0) {
+      p->curpos.line += nl;
+      p->curpos.column = 1;
+    } else {
+      start = p->token;
+    }
   } else {
     start = p->token;
   }
@@ -164,27 +192,39 @@ static void friendsLexerSetTokenPos(friendsParser *p)
   p->tokpos = p->curpos;
 }
 
+static void friendsLexerSetError(friendsParser *p, friendsError e,
+                                 int column_increment)
+{
+  if (!friendsAnyError(p->err)) {
+    friendsSetErrorImplement(&p->err, e);
+    p->errpos = p->curpos;
+  }
+  p->curpos.column += column_increment;
+}
+
 #define AddToken(token)                         \
   friendsLexerAddToken(p, friends##token)
 
 #define SkipToken()                             \
   friendsLexerAddToken(p, -1)
 
-#define IncrementLine() \
+#define IncrementLine()                         \
   friendsLexerControlPos(p, friendsTrue)
 
-#define IncrementPos() \
+#define IncrementPos()                          \
   friendsLexerControlPos(p, friendsFalse)
+
+#define SetError(symbol)                            \
+  friendsLexerSetError(p, friendsError##symbol, 1)
 
 void friendsLex(friendsParser *p)
 {
-  int ttype = 0;
-
   friendsAssert(p);
   friendsAssert(p->buffer_list);
 
   if (!p->bufp) {
     friendsLexerFill(p, 1);
+    p->cur = p->bufp;
   }
 
   /* エラー復帰時は、トークンの場所から読み直すのです */
@@ -219,14 +259,18 @@ void friendsLex(friendsParser *p)
       re2c:indent:string = "  ";
       re2c:indent:top = 2;
 
+      nl = ("\n" | "\r\n" | "\r");
       utf8     = [\u0020-\uffef\U00010000-\U0010ffff];
-      u_ascii  = [\u0022-\u0027\u002a\u002b\u002d-\u003e\u0040-\u007e];
+      u_ascii  = [\u0022-\u0027\u002a\u002b\u002d-\u003e\u0040-\u005e\u0060-\u007e];
       u_noncjk = [\u00a1-\u2fff\ua000-\uf8ff\ufb00-\ufb4f\ufe70-\ufeff];
       u_extra  = [\U00010000-\U0010ffff];
       u_jpunct = [\u3003-\u3007\u3012\u3013\u301c\u3020-\u303f];
       u_cjk    = [\u3040-\u9fff\uf900-\ufaff\uff65-\uffee];
-      u_falpha = [\uff02-\uff07\uff0a\uff0b\uff0d-\uff1e\uff20-\uff60];
-      atomchar = (u_ascii|u_noncjk|u_extra|u_jpunct|u_cjk|u_falpha);
+      u_falpha = [\uff02-\uff07\uff0a\uff0b\uff0d-\uff1e\uff20-\uff3e\uff40-\uff60];
+      underscores =  [_\uff3f];  // ＿
+      leadchar = (u_ascii|u_noncjk|u_extra|u_jpunct|u_cjk|u_falpha);
+      atomchar = (leadchar|underscores);
+      utf8nl   = (utf8|nl);
 
       _Exc = [!\uff01];  // ！
       _Que = [?\uff1f];  // ？
@@ -236,20 +280,19 @@ void friendsLex(friendsParser *p)
       _Pcl = [)\uff09];  // )
       _Dop = [\u300e];   // 『
       _Dcl = [\u300f];   // 』
-      _Und = [_\uff3f];  // ＿
+      _Und = underscores;
 
       end = "\x00";
       brackets = (_Kop|_Kcl|_Pop|_Pcl|_Dop|_Dcl);
       ws = [\t \u00a0\u3000];        // 全角SP
       comma = [,\u3001\uff0c\uff64]; // 、，
-      wss = ws+;
-      nl = ("\n" | "\r\n" | "\r");
-      ssep = (nl|wss|brackets|end);
-      csep = (ssep|comma+);
+      ssep = (nl|ws|brackets|end);
+      csep = (ssep|comma);
 
       Dakuten = [\u3099\u309b];
       H_A  =  "\u3042"; // あ
       H_I  =  "\u3044"; // い
+      H_U  =  "\u3046"; // う
       H_Ka =  "\u304b"; // か
       H_Ga = ("\u304c" | "\u304b" Dakuten); // が
       H_Ki =  "\u304d"; // き
@@ -257,6 +300,7 @@ void friendsLex(friendsParser *p)
       H_Ke =  "\u3051"; // け
       H_Ko =  "\u3053"; // こ
       H_Go = ("\u3054" | "\u3053" Dakuten); // ご
+      H_Sa =  "\u3055"; // さ
       H_Si =  "\u3057"; // し
       H_Ji = ("\u3058" | "\u3057" Dakuten); // じ
       H_Su =  "\u3059"; // す
@@ -285,7 +329,9 @@ void friendsLex(friendsParser *p)
       H_Wa =  "\u308f"; // わ
       H_Wo =  "\u3092"; // を
       H_N  =  "\u3093"; // ん
+      K_I  =  "\u30a4"; // イ
       K_Zu = ("\u30ba" | "\u30b9" Dakuten); // ズ
+      K_Ba = ("\u30d0" | "\u30cf" Dakuten); // バ
       K_Fu =  "\u30d5"; // フ
       K_He =  "\u30d8"; // ヘ
       K_Re =  "\u30ec"; // レ
@@ -316,30 +362,39 @@ void friendsLex(friendsParser *p)
       Doko   = H_Do H_Ko;           // どこ
       Dore   = H_Do H_Re;           // どれ
 
-      No = H_No; // の
-      Toka = H_To H_Ka; // とか
+      No    = H_No; // の
+      Toka  = H_To H_Ka; // とか
       Tsugi = (H_Tu H_Gi | "\u6b21"); // つぎ | 次
 
-      De = H_De; // で
+      De   = H_De; // で
       Nara = H_Na H_Ra; // なら
 
-      *   { friendsSetErrorV(p->err, ILSEQ); goto end; }
+      Sayounara = H_Sa H_Yo (H_U)? H_Na H_Ra _Exc; // さよ(う)なら！
+      Matane    = H_Ma H_Ta H_Ne (____)? _Exc;     // またね(ー)！
+      Bye       = K_Ba K_I  K_Ba (____)? K_I _Exc; // バイバ(ー)イ！
+
+      *   { SetError(ILSEQ); continue; }
       end { goto end; }
 
       nl     { IncrementLine(); continue; }
-      wss    { IncrementPos(); continue; }
+      ws+    { IncrementPos(); continue; }
       comma+ { IncrementPos(); continue; }
 
-      Sugoi/ssep    { IncrementPos(); AddToken(SUGOI); continue; }
-      Nandane/ssep  { IncrementPos(); AddToken(NANDANE); continue; }
-      Nandakke/ssep { IncrementPos(); AddToken(NANDAKKE); continue; }
-      Tanoshi/ssep  { IncrementPos(); AddToken(TANOSHI); continue; }
+      Sugoi         { IncrementPos(); AddToken(SUGOI); continue; }
+      Nandane       { IncrementPos(); AddToken(NANDANE); continue; }
+      Nandakke      { IncrementPos(); goto nandakke; }
+      Tanoshi       { IncrementPos(); AddToken(TANOSHI); continue; }
       No/csep       { IncrementPos(); goto may_no; }
       Tsugi/csep    { IncrementPos(); AddToken(TSUGI); continue; }
-      Friends/csep  { IncrementPos(); AddToken(FRIEND); continue; }
+      Friends/csep  { IncrementPos(); goto friend; }
       Toka/csep     { IncrementPos(); AddToken(TOKA); continue; }
       De/csep       { IncrementPos(); goto may_and; }
       Nara/csep     { IncrementPos(); goto may_then; }
+
+      Sayounara     { goto quit; }
+      Matane        { goto quit; }
+      Bye           { goto quit; }
+      'quit'/ssep   { goto quit; }
 
       (Anata|Kimi|Kare|Kanojo|Dare|Nani|Are|Kore|Korera|
        Sore|Sorera|Koko|Soko|Asoko|Doko|Dore)/csep
@@ -348,12 +403,24 @@ void friendsLex(friendsParser *p)
       _Und           { IncrementPos(); goto und; }
       _Kop           { IncrementPos(); AddToken(LKAGI); continue; }
       _Kcl           { IncrementPos(); AddToken(RKAGI); continue; }
-      _Pop           { IncrementPos(); ttype = friendsATOM; goto Pcl; }
-      _Dop           { IncrementPos(); ttype = friendsATOM; goto Dcl; }
-      atomchar+/csep { IncrementPos(); goto general_token; }
+      _Pop           { IncrementPos(); p->last_type = friendsATOM; goto Pcl; }
+      _Dop           { IncrementPos(); p->last_type = friendsATOM; goto Dcl; }
+      leadchar atomchar* /end  { goto end; }
+      leadchar atomchar* /csep { IncrementPos(); goto general_token; }
     */
 
     friendsUnreachable();
+
+  nandakke:
+    AddToken(NANDAKKE);
+    p->token = p->cur;
+    AddToken(SEPR);
+    continue;
+
+  friend:
+    friendsChangeLastTokenIf(p, friendsATOM, friendsFRIEND_NAME);
+    AddToken(FRIEND);
+    continue;
 
   may_no:
     switch (p->last_type) {
@@ -405,18 +472,22 @@ void friendsLex(friendsParser *p)
     continue;
 
   und:
-    ttype = friendsVARIABLE;
+    p->last_type = friendsVARIABLE;
     p->lexer_state = friendsLexerUNDERSCORE;
     p->token = p->cur;
 
     /*!re2c
-      * { friendsSetErrorV(p->err, ILSEQ); goto end; }
+     * { SetError(Underscore); continue; }
       end  { goto end; }
       _Pop { goto Pcl; }
       _Dop { goto Dcl; }
-      atomchar+/csep {
+      atomchar+ /end { // 部分的に読み込んだのです。
+        goto end;
+      }
+      atomchar+ /csep {
         IncrementPos();
-        friendsLexerAddToken(p, ttype);
+        friendsLexerAddToken(p, p->last_type);
+        p->lexer_state = friendsLexerNORMAL;
         continue;
       }
      */
@@ -425,45 +496,60 @@ void friendsLex(friendsParser *p)
 
   Pcl:
     p->token = p->cur;
+    p->lexer_state = friendsLexerPAREN;
   Pcl_continue:
     for (;;) {
       p->stoken = p->cur;
       /*!re2c
         re2c:indent:top = 3;
 
-        * { friendsSetErrorV(p->err, ILSEQ); goto end; }
-        end  { goto end; }
-        _Pcl { break; }
-        utf8 { continue; }
+        * { SetError(ILSEQ); continue; }
+        end    { goto end; }
+        _Pcl   { break; }
+        utf8nl { continue; }
       */
     }
     goto bracket;
 
   Dcl:
     p->token = p->cur;
+    p->lexer_state = friendsLexerDBRACKET;
   Dcl_continue:
     for (;;) {
       p->stoken = p->cur;
       /*!re2c
         re2c:indent:top = 3;
 
-        * { friendsSetErrorV(p->err, ILSEQ); goto end; }
-        end  { goto end; }
-        _Dcl { break; }
-        utf8 { continue; }
+        * { SetError(ILSEQ); continue; }
+        end    { goto end; }
+        _Dcl   { break; }
+        utf8nl { continue; }
       */
     }
     goto bracket;
 
   bracket:
+    IncrementLine();
+    p->lexer_state = friendsLexerNORMAL;
     p->mark = p->cur;
     p->cur = p->stoken;
-    friendsLexerAddToken(p, ttype);
+    friendsLexerAddToken(p, p->last_type);
     p->cur = p->mark;
     p->stoken = NULL;
     p->mark = NULL;
     continue;
+
+  quit:
+    IncrementPos();
+    AddToken(END);
+    friendsSetErrorV(p->err, Bye);
+    continue;
   }
 
- end: /* No postactions here. */;
+ end:
+  if (friendsAnyError(p->err) && !friendsIsError(p->err, Bye)) {
+    friendsPrintError(friendsErrorLevelError, p->filename,
+                      p->errpos.line, p->errpos.column, NULL, p->err);
+
+  }
 }

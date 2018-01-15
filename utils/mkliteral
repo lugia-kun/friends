@@ -1,5 +1,12 @@
 #!ruby
 
+s = ARGV[0]
+begin
+  cs = Integer(s)
+rescue ArgumentError
+  cs = 30
+end
+
 begin
   require 'readline'
   $readline = true
@@ -7,7 +14,7 @@ rescue LoadError
   $readline = false
 end
 
-LINE_LIMIT = 30
+LINE_LIMIT = cs
 
 def reader
   if $readline

@@ -33,10 +33,9 @@ friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e);
  * @param e    NULL でなければ、そこにエラーの情報を書き込むのです。
  * @return よこしたデータを返すのです。
  *
- * 設定した文字列はデータの一部になり、パークが捨てられたときに一緒に
- * 捨てられるのです。
+ * 文字列は設定するときにコピーするのです。
  */
-friendsData *friendsSetTextAtom(friendsData *dest, friendsChar *t,
+friendsData *friendsSetTextAtom(friendsData *dest, const friendsChar *t,
                                 friendsError *e);
 
 /**

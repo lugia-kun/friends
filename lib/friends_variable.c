@@ -9,35 +9,42 @@
 #include "friends_error.h"
 #include "friends_string.h"
 
+static
+friendsVariableData *friendsGetVariableData(void *p)
+{
+  return (friendsVariableData *)p;
+}
+
 const friendsVariableData *friendsGetVariable(friendsData *d)
 {
   if (!d) return NULL;
   if (friendsGetType(d) != friendsVariable) return NULL;
 
-  return (friendsVariableData *)d->data;
+  return friendsGetVariableData(friends_DataGetTypeData(d));
 }
 
-static void friendsVariableDeleter(void *p)
+static void *friendsVariableDeleter(void *p)
 {
   friendsVariableData *d;
 
-  if (!p) return;
+  friendsAssert(p);
 
-  d = (friendsVariableData *)p;
+  d = friendsGetVariableData(p);
   free(d->text);
-  friendsFree(d);
+
+  return p;
 }
 
-static friendsDataCompareResult friendsVariableCompare(const void *a,
-                                                       const void *b)
+static friendsDataCompareResult
+friendsVariableCompare(void *a, void *b)
 {
-  const friendsVariableData *va, *vb;
+  friendsVariableData *va, *vb;
   int r;
 
   if (a == b) return friendsDataEqual;
 
-  va = (const friendsVariableData *)a;
-  vb = (const friendsVariableData *)b;
+  va = friendsGetVariableData(a);
+  vb = friendsGetVariableData(b);
 
   if (va->tail != vb->tail) {
     return friendsDataNotEqual;
@@ -51,29 +58,51 @@ static friendsDataCompareResult friendsVariableCompare(const void *a,
   }
 }
 
+static friendsError
+friendsVariableTextCreator(friendsChar **output, void *p)
+{
+  friendsVariableData *data;
 
-friendsData *friendsSetVariable(friendsData *dest, friendsChar *text,
+  data = friendsGetVariableData(p);
+  *output = data->text;
+  return friendsNoError;
+}
+
+static const friendsDataFunctions friendsVariableFuncs =
+{
+  .comparator = friendsVariableCompare,
+  .deleter = friendsVariableDeleter,
+  .txt_creator = friendsVariableTextCreator,
+  .txt_deleter = NULL,
+};
+
+friendsData *friendsSetVariable(friendsData *dest, const friendsChar *text,
                                 friendsBool tail, friendsError *e)
 {
-  friendsVariableData *d;
+  friendsError err;
+  friendsVariableData *data;
+  friendsChar *buf;
+  friendsSize sz;
 
   friendsAssert(dest);
   friendsAssert(text);
 
-  d = friendsMalloc(sizeof(friendsVariableData), e);
-  if (!d) {
+  sz = friendsStringDuplicate(&buf, text, NULL, e);
+  if (sz < 0) {
     return NULL;
   }
 
-  d->text = text;
-  d->tail = tail;
-
-  if (!friendsSetData(dest, friendsVariable, d, friendsVariableDeleter,
-                      friendsVariableCompare, text, NULL,
-                      friendsHashString(text, NULL), friendsFalse, e)) {
-    free(d);
+  err = friends_DataSet(dest, friendsVariable, sizeof(friendsVariableData),
+                        &friendsVariableFuncs);
+  if (friendsAnyError(err)) {
+    if (e) *e = err;
+    free(buf);
     return NULL;
   }
+
+  data = friendsGetVariableData(friends_DataGetTypeData(dest));
+  data->text = buf;
+  data->tail = tail;
 
   return dest;
 }

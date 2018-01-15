@@ -5,35 +5,37 @@
 #include "friends_struct_data.h"
 #include "friends_data.h"
 #include "friends_proposition.h"
-#include "friends_list.h"
 #include "friends_error.h"
 #include "friends_string.h"
+
+static
+friendsPropositionData *friendsGetPropositionData(void *p)
+{
+  return (friendsPropositionData *)p;
+}
 
 const friendsPropositionData *friendsGetProposition(friendsData *d)
 {
   if (!d) return NULL;
   if (friendsGetType(d) != friendsProposition) return NULL;
 
-  return (friendsPropositionData *)d->data;
+  return friendsGetPropositionData(friends_DataGetTypeData(d));
 }
 
-static void friendsPropositionDeleter(void *p)
+static void *friendsPropositionDeleter(void *p)
 {
   friendsPropositionData *a;
 
-  if (!p) return;
+  a = friendsGetPropositionData(p);
 
-  a = (friendsPropositionData *)p;
-
-  friendsDeleteList(a->arguments);
-  friendsDeleteList(a->conditions);
+  friendsDataListDeleteAll(a->arguments);
+  friendsDataListDeleteAll(a->conditions);
   free(a->verb);
-  free(a);
+  return a;
 }
 
 static friendsDataCompareResult
-friendsPropositionListCompare(friendsDataList *la,
-                              friendsDataList *lb)
+friendsPropositionListCompare(friendsDataList *la, friendsDataList *lb)
 {
   friendsDataCompareResult t, u;
   friendsData *da, *db;
@@ -41,32 +43,30 @@ friendsPropositionListCompare(friendsDataList *la,
 
   if (!la || !lb) { return friendsDataNotComparable; }
 
-  la = friendsListParent(la);
-  lb = friendsListParent(lb);
+  la = friendsDataListHead(la);
+  lb = friendsDataListHead(lb);
   if (la == lb) { return friendsDataEqual; }
   if (!la || !lb) { return friendsDataNotComparable; }
 
-  if (friendsListSize(la) != friendsListSize(lb)) {
-    return friendsDataNotEqual;
-  }
-
-  if (friendsListSize(la) == 0) {
+  if (friendsDataListIsEmpty(la) &&
+      friendsDataListIsEmpty(lb)) {
     return friendsDataEqual;
   }
 
   t = friendsDataEqual;
-  la = friendsListBegin(la);
-  lb = friendsListBegin(lb);
-  for (; la && lb; la = friendsListNext(la), lb = friendsListNext(lb)) {
-    da = friendsListData(la);
-    db = friendsListData(lb);
+  la = friendsDataListBegin(la);
+  lb = friendsDataListBegin(lb);
+  for (; la && lb;
+       la = friendsDataListNext(la), lb = friendsDataListNext(lb)) {
+    da = friendsDataListGetData(la);
+    db = friendsDataListGetData(lb);
     if (da == db) continue;
     u = friendsDataCompare(da, db);
     if (u == friendsDataDifferentType) { t = u; break; }
     if (friendsDataCompareIsNotEqual(u)) {
-      if (friendsGetType(da) == friendsList) {
-        sla = friendsGetList(da);
-        slb = friendsGetList(db);
+      if (friendsGetType(da) == friendsListType) {
+        sla = friendsGetList(da, NULL);
+        slb = friendsGetList(db, NULL);
         u = friendsPropositionListCompare(sla, slb);
         if (friendsDataCompareIsNotEqual(u)) {
           t = u;
@@ -77,6 +77,9 @@ friendsPropositionListCompare(friendsDataList *la,
         break;
       }
     }
+  }
+  if (la || lb) {
+    return friendsDataNotEqual;
   }
   return t;
 }
@@ -115,13 +118,11 @@ friendsPropositionCompare(const friendsPropositionData *a,
   }
 }
 
-static friendsDataCompareResult friendsPropositionCompareV(const void *a,
-                                                           const void *b)
+static friendsDataCompareResult
+friendsPropositionCompareV(void *a, void *b)
 {
-  if (!a || !b) return friendsDataNotComparable;
-
-  return friendsPropositionCompare((const friendsPropositionData *)a,
-                                   (const friendsPropositionData *)b);
+  return friendsPropositionCompare(friendsGetPropositionData(a),
+                                   friendsGetPropositionData(b));
 }
 
 static friendsBool friendsPropositionArgsChecker(friendsDataList *arguments,
@@ -133,21 +134,21 @@ static friendsBool friendsPropositionArgsChecker(friendsDataList *arguments,
   friendsDataList *l;
   friendsBool b;
 
-  arguments = friendsListBegin(arguments);
-  for (; arguments; arguments = friendsListNext(arguments)) {
-    d = friendsListData(arguments);
+  arguments = friendsDataListBegin(arguments);
+  for (; arguments; arguments = friendsDataListNext(arguments)) {
+    d = friendsDataListGetData(arguments);
     if (!d) continue;
     t = friendsGetType(d);
     switch (t) {
     case friendsAtom:
     case friendsVariable:
       break;
-    case friendsList:
+    case friendsListType:
       if (nest > 10968) {
         friendsSetError(err, TooNested);
         return friendsFalse;
       }
-      l = friendsGetList(d);
+      l = friendsGetList(d, NULL);
       b = friendsPropositionArgsChecker(l, err, nest + 1);
       if (b == friendsFalse) return b;
       break;
@@ -159,67 +160,92 @@ static friendsBool friendsPropositionArgsChecker(friendsDataList *arguments,
   return friendsTrue;
 }
 
-friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
-                                   friendsDataList *arguments,
-                                   friendsDataList *conditions,
-                                   friendsPropositionMode mode,
-                                   friendsError *err)
+const static friendsDataFunctions friendsPropositionFuncs = {
+  .comparator = friendsPropositionCompareV,
+  .deleter = friendsPropositionDeleter,
+  .txt_creator = NULL,
+  .txt_deleter = NULL,
+};
+
+friendsData *
+friendsSetProposition(friendsData *dest, const friendsChar *verb,
+                      friendsDataList *arguments, friendsDataList *conditions,
+                      friendsPropositionMode mode, friendsError *e)
 {
+  friendsError err;
   friendsDataList *l;
   friendsPropositionData *d;
-  friendsData *dd;
   const friendsPropositionData *pd;
+  friendsData *dd;
+  friendsChar *vv;
+  friendsSize n;
 
   friendsAssert(dest);
   friendsAssert(verb);
+  friendsAssert(arguments);
 
-  if (!arguments) {
-    friendsSetError(err, NoArgument);
-    return NULL;
-  }
-  if (friendsListSize(arguments) == 0) {
-    friendsSetError(err, NoArgument);
+  if (friendsDataListIsEmpty(arguments)) {
+    friendsSetError(e, NoArgument);
     return NULL;
   }
 
-  arguments = friendsListParent(arguments);
-  if (friendsPropositionArgsChecker(arguments, err, 0) == friendsFalse)
+  arguments = friendsDataListHead(arguments);
+  if (friendsPropositionArgsChecker(arguments, e, 0) == friendsFalse) {
+    friendsDataListDeleteAll(arguments);
     return NULL;
+  }
 
   if (conditions) {
-    conditions = friendsListParent(conditions);
-    l = friendsListBegin(conditions);
-    for (; l; l = friendsListNext(l)) {
-      dd = friendsListData(l);
+    l = friendsDataListBegin(conditions);
+    for (; l; l = friendsDataListNext(l)) {
+      dd = friendsDataListGetData(l);
       pd = friendsGetProposition(dd);
       if (!pd) {
-        friendsSetError(err, InvalidType);
+        friendsSetError(e, InvalidType);
         return NULL;
       }
     }
+    conditions = friendsDataListDuplicate(conditions, e);
+    if (!conditions) {
+      return NULL;
+    }
   }
 
-  d = (friendsPropositionData *)calloc(sizeof(friendsPropositionData), 1);
-  if (!d) {
-    friendsSetError(err, NOMEM);
+  arguments = friendsDataListDuplicate(arguments, e);
+  if (!arguments) {
+    if (conditions) {
+      friendsDataListDeleteAll(conditions);
+    }
     return NULL;
   }
 
+  n = friendsStringDuplicate(&vv, verb, NULL, e);
+  if (n == -1) {
+    if (conditions) {
+      friendsDataListDeleteAll(conditions);
+    }
+    friendsDataListDeleteAll(arguments);
+    return NULL;
+  }
+
+  err = friends_DataSet(dest, friendsProposition,
+                       sizeof(friendsPropositionData),
+                       &friendsPropositionFuncs);
+  if (friendsAnyError(err)) {
+    if (e) *e = err;
+    friendsDataListDeleteAll(conditions);
+    friendsDataListDeleteAll(arguments);
+    free(vv);
+    return NULL;
+  }
+
+  d = friendsGetPropositionData(friends_DataGetTypeData(dest));
   d->arguments = arguments;
   d->conditions = conditions;
   d->mode = mode;
-  d->verb = verb;
+  d->verb = vv;
 
-  dd = friendsSetData(dest, friendsProposition, d,
-                      friendsPropositionDeleter,
-                      NULL, verb, NULL,
-                      friendsHashString(verb, NULL),
-                      friendsFalse, err);
-  if (!dd) {
-    free(d);
-    return NULL;
-  }
-  return dd;
+  return dest;
 }
 
 friendsDataList *friendsPropositionArguments(const friendsPropositionData *p)

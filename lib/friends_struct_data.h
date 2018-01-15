@@ -1,5 +1,5 @@
 /**
- * @file friends_data.h
+ * @file friends_struct_data.h
  */
 /* -*- mode: c -*- */
 /* vim: set ft=c: */
@@ -7,55 +7,73 @@
 #ifndef FRIENDS_STRUCT_DATA_H
 #define FRIENDS_STRUCT_DATA_H
 
+#include <stdint.h>
+
 #include "friends_defs.h"
 
-struct friendsDataListT
+struct friendsDataFunctions
 {
-  friendsData     *data;   /*!< データ */
-  friendsDataList *next;   /*!< 次のデータ */
-  friendsDataList *prev;   /*!< 前のデータ */
-  friendsDataList *begin;  /*!< 親へのポインタ */
-  size_t size;             /*!< リストの要素数（最初のデータのみ使用） */
+  friendsObjectDeleter   *deleter;     /*!< データの削除関数 */
+  friendsDataCompareFunc *comparator;  /*!< データの比較関数 */
+  friendsTextDeleter     *txt_deleter; /*!< 文字列データの削除関数 */
+  friendsTextCreator     *txt_creator; /*!< 文字列データの作成関数 */
 };
 
-struct friendsDataSetT
+/**
+ * @typedef friendsMaxAlignType
+ * @brief アライメントの最も大きい型
+ *
+ * もしコンパイラが C11 が対応していれば `max_align_t` を使うのです。C11
+ * に対応していない場合は、基本的な型を `union` で固めた型を使っているの
+ * です (ただし、不十分かもしれません)。
+ */
+#if defined(HAVE_MAX_ALIGN_T)
+typedef max_align_t friendsMaxAlignType;
+#else
+typedef union {
+  short s; int i; long int l; long long int ll; intmax_t im;
+  float f; double d; long double ld;
+  void *p; void (*fp)(void);
+} friendsMaxAlignType;
+#endif
+
+struct friendsDataObject
 {
-  friendsDataSetNode **table;  /*!< テーブル */
+  friendsType type;    /*!< データの種類 */
+  const friendsDataFunctions *funcs; /*!< データの処理関数 */
+  friendsChar *txt;    /*!< 文字列データ */
+  friendsSize refc;    /*!< 参照個数 */
+  friendsSize size;    /*!< データのサイズ */
+  friendsHash hash;    /*!< ハッシュ値 */
+  friendsMaxAlignType data[];  /*!< データ */
 };
+typedef struct friendsDataObject friendsDataObject;
 
-struct friendsDataSetNodeT
+struct friendsData
 {
-  friendsDataList *list;    /*!< リスト */
-  friendsDataSet *root;     /*!< ルートノード */
-  friendsDataSetNode *next; /*!< 次のノード */
+  friendsPark *park;   /*!< 所属するパーク */
+  friendsDataObject *object;
 };
 
-struct friendsDataT
+union friendsAtomInternal
 {
-  friendsPark *park;                  /*!< 所属するパーク */
-  friendsType  type;                  /*!< データの種類 */
-  friendsHash  hash;                  /*!< ハッシュ値（連想配列型で使用） */
-  void   *data;                       /*!< データへのポインタ */
-  friendsPointerDeleter *deleter;     /*!< データの削除関数 */
-  friendsChar *txt;                   /*!< データの文字列情報 */
-  friendsPointerDeleter *txt_deleter; /*!< テキストデータの削除関数 */
-  friendsDataCompareFunc *comp_func;  /*!< データの比較関数 */
+  int n;            /*!< 数値アトムの値 */
+  friendsChar *t;   /*!< 文字列アトムの値 */
 };
 
-struct friendsAtomDataT {
-  friendsAtomType type;          /*!< アトムの型 */
-  union friendsAtomInternalT {
-    int n;                       /*!< 数値アトムの値 */
-    friendsChar *t;              /*!< 文字列アトムの値 */
-  } data;                        /*!< アトムのデータ */
+struct friendsAtomData
+{
+  friendsAtomType type;           /*!< アトムの型 */
+  union friendsAtomInternal data; /*!< アトムのデータ */
 };
 
-struct friendsVariableDataT {
+struct friendsVariableData
+{
   friendsChar *text;         /*!< 変数名 */
   friendsBool tail;
 };
 
-struct friendsPropositionDataT
+struct friendsPropositionData
 {
   friendsDataList *conditions; /*!< 前提条件 */
   friendsDataList *arguments;  /*!< パラメータのリスト */
@@ -63,18 +81,19 @@ struct friendsPropositionDataT
   friendsPropositionMode mode; /*!< モード */
 };
 
-struct friendsMatchDataT
+struct friendsMatchData
 {
   friendsBool t;
 };
 
-struct friendsMemoryT
+struct friendsMemory
 {
   void *p;
+  friendsBool delete_later;
   friendsPointerDeleter *del;
 };
 
-struct friendsParkT
+struct friendsPark
 {
   friendsDataSet  *friends;    /*!< 命題のリスト（述語ごとに区分け） */
   friendsDataSet  *atoms;
@@ -83,26 +102,21 @@ struct friendsParkT
   friendsBool deleting;
 };
 
-struct friendsLineColumnT {
+struct friendsLineColumn
+{
   long line;
   long column;
 };
 
-struct friendsTokenDataT
-{
-  friendsChar *token;
-  int token_type;
-  friendsLineColumn lc;
-};
-
-struct friendsParserT
+struct friendsParser
 {
   friendsPark *park;
   void *parserData;
-  friendsDataList *buffer_list; /*!< 文字列のリスト */
-  friendsDataList *tokens;
-  friendsDataList *listcur;
+  friendsToken *tokens;
+  friendsToken *tokencur;
   friendsDataList *parsed_data;
+  friendsStringList *buffer_list;
+  friendsStringList *listcur;
   size_t bufp_size;
   friendsChar *bufp;
   const friendsChar *cur;
@@ -113,11 +127,10 @@ struct friendsParserT
   const friendsChar *stoken;
   friendsLineColumn curpos;
   friendsLineColumn tokpos;
-  enum {
-    friendsLexerNORMAL, friendsLexerPAREN, friendsLexerDBRACKET,
-    friendsLexerUNDERSCORE,
-  } lexer_state;
+  friendsLineColumn errpos;
+  friendsLexerState lexer_state;
   int last_type;
+  const char* filename;
   friendsError err;
 };
 

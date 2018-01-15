@@ -9,16 +9,34 @@
 
 #include "friends_defs.h"
 
-friendsData *friendsSetToken(friendsData *data,
-                             friendsChar *token_text,
-                             int token_type,
-                             long line, long column, friendsError *e);
+friendsToken *friendsNewTokenList(friendsError *e);
 
-const friendsTokenData *friendsGetToken(friendsData *data);
+friendsToken *friendsTokenNext(friendsToken *t);
 
-int friendsTokenType(const friendsTokenData *data);
-friendsChar *friendsTokenText(const friendsTokenData *data);
-long friendsTokenLinePosition(const friendsTokenData *data);
-long friendsTokenColumnPosition(const friendsTokenData *data);
+friendsToken *friendsTokenPrev(friendsToken *t);
+
+void friendsTokenDelete(friendsToken *t);
+
+void friendsTokenDeleteAll(friendsToken *t);
+
+
+friendsToken *
+friendsTokenAppend(friendsToken *list, int token_type,
+                   const friendsChar *start, const friendsChar *end,
+                   long line, long column, friendsError *e);
+
+int friendsTokenType(const friendsToken *data);
+
+void friendsSetTokenType(friendsToken *d, int type);
+
+friendsChar *friendsTokenText(const friendsToken *data);
+
+long friendsTokenLinePosition(const friendsToken *data);
+
+long friendsTokenColumnPosition(const friendsToken *data);
+
+void friendsTokenMarkDelete(friendsToken *data);
+
+friendsBool friendsTokenMarkDeleted(const friendsToken *data);
 
 #endif

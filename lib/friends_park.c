@@ -6,11 +6,11 @@
 #include "friends_park.h"
 #include "friends_set.h"
 #include "friends_error.h"
-#include "friends_list.h"
 #include "friends_data.h"
 #include "friends_atom.h"
 #include "friends_parser.h"
 
+#if 0
 friendsPark *friendsNewPark(friendsError *e)
 {
   friendsPark *p;
@@ -45,6 +45,7 @@ void friendsDeletePark(friendsPark *park)
   if (!park) return;
 
   park->deleting = friendsTrue;
+  friendsDeleteParser(park->parser);
 
   l = park->alloc_table;
   for (; l; l = friendsListNext(l)) {
@@ -58,7 +59,6 @@ void friendsDeletePark(friendsPark *park)
   friendsDeleteList(park->alloc_table);
   friendsDeleteSet(park->atoms);
   friendsDeleteSet(park->friends);
-  friendsDeleteParser(park->parser);
   free(park);
 }
 
@@ -73,18 +73,13 @@ void *friendsAddPointer(friendsPark *park, void *p,
                         friendsPointerDeleter *deleter,
                         friendsError *e)
 {
-  friendsError ee;
   friendsMemory *m;
+  friendsDataList *l;
 
   friendsAssert(park);
   friendsAssert(p);
   friendsAssert(deleter);
   friendsAssert(park->alloc_table);
-
-  if (!e) {
-    ee = friendsNoError;
-    e = &ee;
-  }
 
   m = (friendsMemory *)calloc(sizeof(friendsMemory), 1);
   if (!m) {
@@ -95,8 +90,8 @@ void *friendsAddPointer(friendsPark *park, void *p,
   m->p = p;
   m->del = deleter;
 
-  friendsListAppend(park->alloc_table, (friendsData *)m, e);
-  if (friendsAnyError(*e)) {
+  l = friendsListAppend(park->alloc_table, (friendsData *)m, e);
+  if (!l) {
     free(m);
     return NULL;
   }
@@ -223,3 +218,4 @@ friendsParser *friendsResetParser(friendsPark *park, friendsError *err)
   park->parser = friendsNewParser(park, err);
   return park->parser;
 }
+#endif

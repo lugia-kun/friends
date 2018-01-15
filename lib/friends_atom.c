@@ -8,25 +8,34 @@
 #include "friends_core.h"
 #include "friends_data.h"
 #include "friends_string.h"
+#include "friends_io.h"
 
-static void friendsAtomDeleter(void *p)
+static friendsAtomData *friendsGetAtomData(void *p)
+{
+  friendsAssert(p);
+
+  return (friendsAtomData *)p;
+}
+
+static void *friendsAtomDeleter(void *p)
 {
   friendsAtomData *d;
 
-  if (!p) return;
+  friendsAssert(p);
 
-  d = (friendsAtomData *)p;
+  d = friendsGetAtomData(p);
   if (d->type == friendsTextAtom) {
-    free((void *)d->data.t);
+    free(d->data.t);
   }
-
-  friendsFree(p);
+  return p;
 }
 
-friendsDataCompareResult friendsAtomCompare(const friendsAtomData *a,
-                                            const friendsAtomData *b)
+friendsDataCompareResult
+friendsAtomCompare(const friendsAtomData *a, const friendsAtomData *b)
 {
   int r;
+
+  friendsAssert(a);
 
   if (!a || !b) return friendsDataNotEqual;
   if (a->type != b->type) return friendsDataDifferentType;
@@ -53,25 +62,75 @@ friendsDataCompareResult friendsAtomCompare(const friendsAtomData *a,
   }
 }
 
-static friendsDataCompareResult friendsAtomCompareV(const void *a,
-                                                    const void *b)
+static friendsDataCompareResult
+friendsAtomCompareV(void *a, void *b)
 {
-  return friendsAtomCompare((const friendsAtomData *)a,
-                            (const friendsAtomData *)b);
+  return friendsAtomCompare(friendsGetAtomData(a), friendsGetAtomData(b));
 }
 
-const friendsAtomData *friendsGetAtom(friendsData *d)
+const friendsAtomData *
+friendsGetAtom(friendsData *d)
 {
   if (!d) return NULL;
   if (friendsGetType(d) == friendsAtom) {
-    return (friendsAtomData *)d->data;
+    return friendsGetAtomData(friends_DataGetTypeData(d));
   }
   return NULL;
 }
 
-friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e)
+static friendsError
+friendsAtomTextCreator(friendsChar **output, void *p)
+{
+  friendsError err;
+  friendsAtomData *d;
+  d = friendsGetAtomData(p);
+
+  err = friendsNoError;
+  switch(d->type) {
+  case friendsNumericAtom:
+    friendsAsprintCF(output, &err, "%d", d->data.n);
+    break;
+  case friendsNextAtom:
+    friendsUnescapeStringLiteral(output, "\\u6b21" /* 次 */, &err);
+    break;
+  case friendsTextAtom:
+    *output = d->data.t;
+    break;
+  default:
+    friendsUnreachable();
+    break;
+  }
+  return err;
+}
+
+static void
+friendsAtomTextDeleter(friendsChar *text, void *p)
 {
   friendsAtomData *d;
+  d = friendsGetAtomData(p);
+
+  switch(d->type) {
+  case friendsNumericAtom:
+  case friendsNextAtom:
+    free(text);
+    break;
+  default:
+    break;
+  }
+}
+
+static const friendsDataFunctions friendsAtomFuncs = {
+  .deleter     = friendsAtomDeleter,
+  .txt_creator = friendsAtomTextCreator,
+  .txt_deleter = friendsAtomTextDeleter,
+  .comparator  = friendsAtomCompareV,
+};
+
+friendsData *
+friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e)
+{
+  friendsError err;
+  friendsAtomData *data;
 
   friendsAssert(dest);
 
@@ -80,81 +139,65 @@ friendsData *friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e)
     return NULL;
   }
 
-  d = friendsMalloc(sizeof(friendsAtomData), e);
-  if (!d) {
+  err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
+                        &friendsAtomFuncs);
+  if (friendsAnyError(err)) {
+    if (e) *e = err;
     return NULL;
   }
+  data = friendsGetAtomData(friends_DataGetTypeData(dest));
 
-  d->data.n = a;
-  d->type = friendsNumericAtom;
-
-  if (!friendsSetData(dest, friendsAtom, d, friendsAtomDeleter,
-                      friendsAtomCompareV, NULL, NULL,
-                      friendsHashNumeral(a),
-                      friendsFalse, e)) {
-    free(d);
-    return NULL;
-  }
+  data->data.n = a;
+  data->type = friendsNumericAtom;
 
   return dest;
 }
 
-friendsData *friendsSetTextAtom(friendsData *dest, friendsChar *text,
+friendsData *friendsSetTextAtom(friendsData *dest, const friendsChar *text,
                                 friendsError *e)
 {
-  friendsAtomData *d;
+  friendsError err;
+  friendsAtomData *data;
+  friendsChar *buf;
+  friendsSize sz;
+  friendsHash hsh;
 
   friendsAssert(dest);
   friendsAssert(text);
 
-  d = friendsMalloc(sizeof(friendsAtomData), e);
-  if (!d) {
+  sz = friendsStringDuplicate(&buf, text, NULL, e);
+  if (sz < 0) {
     return NULL;
   }
 
-  d->data.t = text;
-  d->type = friendsTextAtom;
-
-  if (!friendsSetData(dest, friendsAtom, d, friendsAtomDeleter,
-                      friendsAtomCompareV, text, NULL,
-                      friendsHashString(text, NULL),
-                      friendsFalse, e)) {
-    free(d);
+  err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
+                        &friendsAtomFuncs);
+  if (friendsAnyError(err)) {
+    if (e) *e = err;
+    free(buf);
     return NULL;
   }
+
+  data = friendsGetAtomData(friends_DataGetTypeData(dest));
+  data->type = friendsTextAtom;
+  data->data.t = buf;
 
   return dest;
 }
 
 friendsData *friendsSetNextAtom(friendsData *dest, friendsError *e)
 {
-  friendsChar *ch;
-  friendsAtomData *d;
-  int r;
+  friendsError err;
+  friendsAtomData *data;
 
   friendsAssert(dest);
 
-  d = friendsMalloc(sizeof(friendsAtomData), e);
-  if (!d) {
-    return NULL;
-  }
+  err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
+                        &friendsAtomFuncs);
 
-  r = friendsUnescapeStringLiteral(&ch, "\\u6b21" /* 次 */, e);
-  if (r < 0) {
-    free(d);
-    return NULL;
-  }
-
-  d->data.t = NULL;
-  d->type = friendsNextAtom;
-
-  if (!friendsSetData(dest, friendsAtom, d, friendsAtomDeleter,
-                      friendsAtomCompareV, ch, free,
-                      friendsHashValueNextAtom, friendsFalse, e)) {
-    free(d);
-    free(ch);
-    return NULL;
-  }
+  data = friendsGetAtomData(friends_DataGetTypeData(dest));
+  data->data.t = NULL;
+  data->type = friendsNextAtom;
 
   return dest;
 }

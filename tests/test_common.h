@@ -27,9 +27,10 @@
 /**
  * @brief
  */
-static friendsData *newData(friendsPark *park, friendsAtomType t,
-                            int numeral, const char *txt, friendsError *e,
-                            ...)
+#if 0
+static inline friendsData *
+newData(friendsPark *park, friendsAtomType t, int numeral, const char *txt,
+        friendsError *e, ...)
 {
   va_list ap;
   friendsData *d;
@@ -66,5 +67,6 @@ static friendsData *newData(friendsPark *park, friendsAtomType t,
 
   return d;
 }
+#endif
 
 #endif

@@ -17,7 +17,7 @@
  *
  * NUL 文字で終わっていることはあなたが保証しなくてはならないのです。
  */
-size_t friendsCopyString(friendsChar *output, const friendsChar *input);
+friendsSize friendsCopyString(friendsChar *output, const friendsChar *input);
 
 /**
  * @brief 文字列の配列要素数を返すのです。
@@ -32,7 +32,7 @@ size_t friendsCopyString(friendsChar *output, const friendsChar *input);
  * 要素数なのです。ですから、NUL 文字で終わっていることはあなたが保証
  * しなくてはならないのです。NUL 文字は含まないのです。
  */
-size_t friendsStringArrayLength(const friendsChar *str);
+friendsSize friendsStringArrayLength(const friendsChar *str);
 
 /**
  * @brief 文字列を複製するのです。
@@ -40,8 +40,7 @@ size_t friendsStringArrayLength(const friendsChar *str);
  * @param fstp コピー元の最初の位置をよこすのです。
  * @param endp コピー元の最後の位置をよこすのです。
  * @param NULL でなければ、そこにエラーの情報を書き込むのです。
- * @return コピーした配列要素数を返すのです。失敗した時は (size_t)-1
- *         を返すのです。
+ * @return コピーした配列要素数を返すのです。失敗した時は -1 を返すのです。
  *
  * endp は NULL にしても良いのです。この時は、friendsStringArrayLength
  * を使って長さを調べるのです。
@@ -51,10 +50,10 @@ size_t friendsStringArrayLength(const friendsChar *str);
  *
  * 使い終わったらちゃんと free 関数で解放するのですよ。
  */
-size_t friendsStringDuplicate(friendsChar **output,
-                              const friendsChar *fstp,
-                              const friendsChar *endp,
-                              friendsError *err);
+friendsSize
+friendsStringDuplicate(friendsChar **output,
+                       const friendsChar *fstp, const friendsChar *endp,
+                       friendsError *err);
 
 /**
  * @brief 文字列を比較するのです。
@@ -81,7 +80,7 @@ int friendsStringCompare(const friendsChar *a, const friendsChar *b);
  *
  * `end` が NULL ならば、`start` から NUL 文字にあたるまで調べるのです。
  */
-size_t friendsStringCharCount(const friendsChar *start,
+friendsSize friendsStringCharCount(const friendsChar *start,
                               const friendsChar *end,
                               friendsError *err);
 
@@ -134,5 +133,19 @@ long int friendsStringToLong(const friendsChar *text, const friendsChar **end,
  */
 int friendsUnescapeStringLiteral(friendsChar **output, const char *input,
                                  friendsError *err);
+
+friendsStringList *friendsNewStringList(friendsError *e);
+void friendsDeleteStringList(friendsStringList *head);
+void friendsStringListRemove(friendsStringList *item);
+
+friendsStringList *
+friendsStringListInsert(friendsStringList *list, const friendsChar *start,
+                        const friendsChar *end, friendsError *e);
+
+friendsStringList *friendsStringListNext(friendsStringList *item);
+
+friendsStringList *friendsStringListPrev(friendsStringList *item);
+
+const friendsChar *friendsStringListGetString(friendsStringList *item);
 
 #endif

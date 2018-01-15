@@ -29,15 +29,11 @@ const friendsPropositionData *friendsGetProposition(friendsData *d);
  * 引数のリストは、引数データ (`friendsArgument`) のリスト、
  * 条件のリストは、命題データ (`friendsProposition`) のリストをよこすのです。
  * 他のデータが混ざっているとエラーにするのです。
- *
- * 設定するリストと文字列はこのデータが削除される時に、削除するのです。
- * （リスト内のデータは削除されないのです）
  */
-friendsData *friendsSetProposition(friendsData *dest, friendsChar *verb,
-                                   friendsDataList *arguments,
-                                   friendsDataList *conditions,
-                                   friendsPropositionMode mode,
-                                   friendsError *err);
+friendsData *
+friendsSetProposition(friendsData *dest, const friendsChar *verb,
+                      friendsDataList *arguments, friendsDataList *conditions,
+                      friendsPropositionMode mode, friendsError *e);
 
 /**
  * @brief 引数リストを得るのです。

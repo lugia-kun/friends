@@ -2,12 +2,12 @@
 add_subdirectory(enc)
 
 set(FRIENDS_C_SOURCES
-  friends_core.c
-  friends_list.c friends_set.c friends_io.c friends_error.c
+  friends_core.c friends_set.c friends_io.c friends_error.c
   friends_park.c friends_data.c friends_variable.c
   friends_atom.c friends_proposition.c friends_match.c
   friends_token.c friends_parser_implement.c
   friends_parser.c friends_global.c)
+
 set(FRIENDS_LEMON_SOURCES friends_grammer.lem)
 set(FRIENDS_RE2C_SOURCES  friends_lexer.re friends_string.re
   friends_printf.re friends_pathname.re
@@ -76,13 +76,14 @@ set(LIBFRIENDS_LIBRARIES)
 list(APPEND LIBFRIENDS_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}")
 list(APPEND LIBFRIENDS_INCLUDES "${CMAKE_CURRENT_BINARY_DIR}")
 set(LIBFRIENDS_INCLUDE_DIR "${LIBFRIENDS_INCLUDES}" PARENT_SCOPE)
-if (LIBEDIT_FOUND EQUAL 1)
+if (LIBEDIT_FOUND EQUAL 1 AND FRIENDS_ENABLE_LIBEDIT)
   list(APPEND LIBFRIENDS_INCLUDES "${LIBEDIT_INCLUDE_DIR}")
   list(APPEND LIBFRIENDS_LIBRARIES "${LIBEDIT_LIBRARIES}")
 endif()
 set_target_properties(libfriends PROPERTIES
-  INCLUDE_DIRECTORIES
-  "${LIBFRIENDS_INCLUDES}"
+  INCLUDE_DIRECTORIES "${LIBFRIENDS_INCLUDES}"
+  INTERFACE_INCLUDE_DIRECTORIES "${LIBFRIENDS_INCLUDES}"
+  INTERFACE_LINK_LIBRARIES "${LIBFRIENDS_LIBRARIES}"
   OUTPUT_NAME friends)
 target_link_libraries(libfriends ${LIBFRIENDS_LIBRARIES})
 

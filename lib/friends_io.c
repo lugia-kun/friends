@@ -13,8 +13,11 @@
 #include <unistd.h>
 #endif
 
-#ifdef LIBEDIT_FOUND
+#if defined(FRIENDS_ENABLE_LIBEDIT)
 #include <histedit.h>
+#endif
+#if defined(FRIENDS_ENABLE_READLINE)
+#include <readline/readline.h>
 #endif
 
 #include "friends_io.h"
@@ -22,7 +25,7 @@
 #include "friends_error.h"
 #include "friends_global.h"
 
-struct friendsFileT
+struct friendsFile
 {
   FILE *file;
   const friendsCodeSet *encoding;
@@ -250,6 +253,9 @@ static void *friendsExtendBuffer(friendsChar **tbuf,
   friendsChar *tmp;
   friendsChar *obuf;
 
+  friendsAssert(tbuf);
+  friendsAssert(wptr);
+  friendsAssert(limp);
   friendsAssert(*tbuf);
   friendsAssert(*wptr);
   friendsAssert(*limp);
@@ -275,7 +281,6 @@ static int friendsGetLineCore(friendsChar **buf, FILE *fp,
   friendsChar *tbuf, *tmp;
   friendsChar *wptr;
   friendsChar *limp;
-  friendsChar  tcmp[FRIENDS_MAX_CHAR];
   char *cbuf;
   char *ret;
   const char *cur;
@@ -391,8 +396,13 @@ static int friendsGetLineCore(friendsChar **buf, FILE *fp,
   }
 
  end:
-  *buf = tbuf;
-  iret = wptr - tbuf;
+  if (wptr > tbuf) {
+    *buf = tbuf;
+    iret = wptr - tbuf;
+  } else {
+    free(tbuf);
+    iret = 0;
+  }
 
   free(cbuf);
   return iret;
@@ -411,12 +421,12 @@ int friendsGetLine(friendsChar **buf, friendsFile *fp, friendsError *err)
 }
 
 
-#ifdef LIBEDIT_FOUND
+#if defined(FRIENDS_ENABLE_LIBEDIT)
 static struct friendsPromptData {
   const char *prompt;
 } promptData;
 
-static char *friendsPromptGen(EditLine *e)
+static const char *friendsPromptGen(EditLine *e)
 {
   const char *c = promptData.prompt;
   if (!c) promptData.prompt = "> ";
@@ -424,45 +434,58 @@ static char *friendsPromptGen(EditLine *e)
 }
 #endif
 
-int friendsPrompt(friendsChar **result, friendsChar *prompt,
+int friendsPrompt(friendsChar **result, const friendsChar *prompt,
                   friendsError *err)
 {
-#if defined(LIBEDIT_FOUND)
+#if defined(FRIENDS_ENABLE_LIBEDIT)
   EditLine *el;
   const char *line;
   int count;
   char *prpt_cstr;
   const friendsCodeSet *ccode;
+  int inisatty;
 
   ccode = friendsGetTerminalEncoding();
   friendsAssert(ccode);
 
-  prpt_cstr = NULL;
-  count = ccode->dec(&prpt_cstr, prompt, err);
-  if (count < 0) {
+  inisatty = 0;
+#if defined(HAVE_UNISTD_H)
+  inisatty = isatty(fileno(stdin));
+#endif
+
+  el = friendsGetEditLine();
+  if (el) {
     prpt_cstr = NULL;
-  }
-  promptData.prompt = prpt_cstr;
+    count = ccode->dec(&prpt_cstr, prompt, err);
+    if (count < 0) {
+      prpt_cstr = NULL;
+    }
+    promptData.prompt = prpt_cstr;
 
-  el = el_init("friends", stdin, stdout, stderr);
-  el_set(el, EL_PROMPT, &friendsPromptGen);
-  el_set(el, EL_EDITOR, "emacs");
+    el_set(el, EL_PROMPT, &friendsPromptGen);
 
-  /* number of characters set to count */
-  line = el_gets(el, &count);
-  if (line && count > 0) {
-    count = ccode->enc(result, line, err);
-  } else if (count == 0) {
-    count = friendsUnescapeStringLiteral(result, "", err);
+    /* number of characters set to count */
+    line = el_gets(el, &count);
+    if (line && count > 0) {
+      count = ccode->enc(result, line, err);
+    } else if (count == 0) {
+      *result = NULL;
+    } else {
+      count = -1;
+      friendsSetErrorFromErrno(err, errno);
+    }
+    free(prpt_cstr);
   } else {
-    count = -1;
-    friendsSetErrorFromErrno(err, errno);
+    if (inisatty) {
+      friendsPrintCF(stdout, err, "%ls", prompt);
+    }
+    count = friendsGetLineF(result, stdin, err);
   }
-  el_end(el);
-
-  free(prpt_cstr);
 
   return count;
+
+#elif defined(FRIENDS_ENABLE_READLINE)
+  int isatty;
 
 #else
 #if defined(HAVE_UNISTD_H)
@@ -472,7 +495,114 @@ int friendsPrompt(friendsChar **result, friendsChar *prompt,
 #if defined(HAVE_UNISTD_H)
   }
 #endif
-  return friendsGetLine(result, stdin, err);
+  return friendsGetLineF(result, stdin, err);
 
 #endif
+}
+
+int friendsPromptCF(friendsChar **result, friendsError *err,
+                    const char *prompt_format, ...)
+{
+  friendsChar *t;
+  va_list ap;
+  int n;
+
+  va_start(ap, prompt_format);
+  n = friendsAsprintCV(&t, err, prompt_format, ap);
+  va_end(ap);
+
+  if (n < 0) {
+    t = NULL;
+  }
+
+  n = friendsPrompt(result, t, err);
+  free(t);
+
+  return n;
+}
+
+friendsFile *friendsOpenFile(const char *pathname, const char *mode,
+                             const friendsCodeSet *cset,
+                             friendsError *err)
+{
+  friendsFile *f;
+  FILE *fp;
+
+  friendsAssert(pathname);
+  friendsAssert(mode);
+
+  if (!cset) {
+    cset = friendsGetTerminalEncoding();
+  }
+
+  f = (friendsFile *)calloc(sizeof(friendsFile), 1);
+  if (!f) {
+    friendsSetError(err, NOMEM);
+    return NULL;
+  }
+
+  errno = 0;
+  fp = fopen(pathname, mode);
+  if (!fp) {
+    friendsSetErrorFromErrno(err, errno);
+    free(f);
+    return NULL;
+  }
+
+  f->file = fp;
+  f->encoding = cset;
+  return f;
+}
+
+void friendsCloseFile(friendsFile *file)
+{
+  if (!file) return;
+
+  fclose(file->file);
+  free(file);
+}
+
+friendsBool friendsFileEOF(friendsFile *file)
+{
+  friendsAssert(file);
+
+  if (feof(file->file)) {
+    return friendsTrue;
+  }
+  return friendsFalse;
+}
+
+friendsBool friendsFileError(friendsFile *file)
+{
+  friendsAssert(file);
+
+  if (ferror(file->file)) {
+    return friendsTrue;
+  }
+  return friendsFalse;
+}
+
+void friendsFileClearError(friendsFile *file)
+{
+  friendsAssert(file);
+
+  clearerr(file->file);
+}
+
+friendsFile *friendsFileForFILE(FILE *fp, const friendsCodeSet *cset,
+                                friendsError *e)
+{
+  friendsFile *ffp;
+
+  friendsAssert(fp);
+
+  ffp = (friendsFile *)calloc(sizeof(friendsFile), 1);
+  if (!ffp) {
+    friendsSetError(e, NOMEM);
+    return NULL;
+  }
+
+  ffp->file = fp;
+  ffp->encoding = cset;
+  return ffp;
 }

@@ -12,6 +12,7 @@
 #include "friends_atom.h"
 #include "friends_variable.h"
 
+#if 0
 friendsMatchData *friendsGetMatch(friendsData *data)
 {
   friendsAssert(data);
@@ -136,3 +137,4 @@ friendsBool friendsQuery(friendsPark *park,
   friendsDeleteList(list);
   return friendsFalse;
 }
+#endif

@@ -10,7 +10,7 @@
 #include "friends_defs.h"
 
 /**
- * @brief Friends 言語を読むのです。
+ * @brief Friends 言語を読んでトークンに分割するのです。
  * @param p 読み取り装置をよこすのです。
  */
 void friendsLex(friendsParser *p);
