@@ -279,7 +279,6 @@ friendsSetInsertCommon(friendsDataSet *set, friendsData *d,
 {
   friendsDataSetNode *n;
   friendsDataSetNode *p;
-  friendsPark *park;
   friendsRbTree *root;
 
   friendsAssert(set);
@@ -360,23 +359,3 @@ void friendsSetRemoveAll(friendsDataSet *set, friendsData *d)
   friendsSetDeleteNode(set, n);
 }
 
-void friendsSetEach(friendsDataSet *set,
-                    friendsBool (*f)(friendsDataSet *node, void *a),
-                    void *a)
-{
-  friendsDataList *l;
-  friendsDataSetNode *n;
-  int i;
-
-  friendsAssert(set);
-  friendsAssert(f);
-
-  for (i = 0; i < friendsDataSetSize; ++i) {
-    n = set->table[i];
-    for (; n; n = n->next) {
-      l = n->list;
-      if (!l) continue;
-      if (f(l, a) == friendsFalse) return;
-    }
-  }
-}

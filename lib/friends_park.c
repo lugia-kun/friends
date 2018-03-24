@@ -9,8 +9,8 @@
 #include "friends_data.h"
 #include "friends_atom.h"
 #include "friends_parser.h"
+#include "friends_memory.h"
 
-#if 0
 friendsPark *friendsNewPark(friendsError *e)
 {
   friendsPark *p;
@@ -21,15 +21,14 @@ friendsPark *friendsNewPark(friendsError *e)
     return NULL;
   }
 
-  p->alloc_table = friendsNewList(e);
+  p->allocs = friendsNewMemory(e);
   p->atoms   = friendsNewSet(e);
   p->friends = friendsNewSet(e);
   p->deleting = friendsFalse;
   p->parser = NULL;
 
-  if (!(p->atoms && p->friends)) {
-    friendsDeleteSet(p->atoms);
-    friendsDeleteSet(p->friends);
+  if (!(p->atoms && p->friends && p->allocs)) {
+    friendsDeletePark(p);
     free(p);
     return NULL;
   }
@@ -39,26 +38,13 @@ friendsPark *friendsNewPark(friendsError *e)
 
 void friendsDeletePark(friendsPark *park)
 {
-  friendsDataList *l;
-  friendsMemory *n;
-
   if (!park) return;
 
   park->deleting = friendsTrue;
   friendsDeleteParser(park->parser);
-
-  l = park->alloc_table;
-  for (; l; l = friendsListNext(l)) {
-    n = (friendsMemory *)friendsListData(l);
-    if (n) {
-      if (n->del) n->del(n->p);
-    }
-    free(n);
-  }
-
-  friendsDeleteList(park->alloc_table);
   friendsDeleteSet(park->atoms);
   friendsDeleteSet(park->friends);
+  friendsDeleteMemory(park->allocs);
   free(park);
 }
 
@@ -73,62 +59,22 @@ void *friendsAddPointer(friendsPark *park, void *p,
                         friendsPointerDeleter *deleter,
                         friendsError *e)
 {
-  friendsMemory *m;
-  friendsDataList *l;
-
   friendsAssert(park);
   friendsAssert(p);
-  friendsAssert(deleter);
-  friendsAssert(park->alloc_table);
+  friendsAssert(park->allocs);
 
-  m = (friendsMemory *)calloc(sizeof(friendsMemory), 1);
-  if (!m) {
-    friendsSetError(e, NOMEM);
-    return NULL;
-  }
-
-  m->p = p;
-  m->del = deleter;
-
-  l = friendsListAppend(park->alloc_table, (friendsData *)m, e);
-  if (!l) {
-    free(m);
-    return NULL;
-  }
-
+  p = friendsMemoryAddPointer(park->allocs, p, deleter, e);
   return p;
 }
 
-static friendsBool friendsMemoryFinder(friendsData *d, void *p)
+void *friendsDeletePointer(friendsPark *park, void *p)
 {
-  friendsMemory *m;
-  m = (friendsMemory *)d;
+  friendsAssert(park);
+  friendsAssert(p);
+  friendsAssert(park->allocs);
 
-  if (m->p == p) {
-    return friendsTrue;
-  }
-  return friendsFalse;
-}
-
-void friendsDeletePointer(friendsPark *park, void *p)
-{
-  friendsDataList *l;
-  friendsMemory *m;
-
-  if (!park) return;
-  if (!p) return;
-
-  friendsAssert(park->alloc_table);
-
-  if (park->deleting == friendsTrue) return;
-
-  l = friendsListFindIf(park->alloc_table, friendsMemoryFinder, p);
-  if (!l) return;
-
-  m = (friendsMemory *)friendsListData(l);
-
-  friendsListRemove(l);
-  free(m);
+  p = friendsMemoryDeletePointer(park->allocs, p);
+  return p;
 }
 
 friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
@@ -218,4 +164,3 @@ friendsParser *friendsResetParser(friendsPark *park, friendsError *err)
   park->parser = friendsNewParser(park, err);
   return park->parser;
 }
-#endif

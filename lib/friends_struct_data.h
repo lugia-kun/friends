@@ -86,18 +86,11 @@ struct friendsMatchData
   friendsBool t;
 };
 
-struct friendsMemory
-{
-  void *p;
-  friendsBool delete_later;
-  friendsPointerDeleter *del;
-};
-
 struct friendsPark
 {
-  friendsDataSet  *friends;    /*!< 命題のリスト（述語ごとに区分け） */
-  friendsDataSet  *atoms;
-  friendsDataList *alloc_table;
+  friendsDataSet *friends;    /*!< 命題のリスト（述語ごとに区分け） */
+  friendsDataSet *atoms;
+  friendsMemory *allocs;
   friendsParser *parser;
   friendsBool deleting;
 };

@@ -9,6 +9,7 @@
 #include "friends_data.h"
 #include "friends_string.h"
 #include "friends_io.h"
+#include "friends_data_private.h"
 
 static friendsAtomData *friendsGetAtomData(void *p)
 {
@@ -140,7 +141,7 @@ friendsSetNumeralAtom(friendsData *dest, int a, friendsError *e)
   }
 
   err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
-                        &friendsAtomFuncs);
+                        &friendsAtomFuncs, friendsHashNumeral(a));
   if (friendsAnyError(err)) {
     if (e) *e = err;
     return NULL;
@@ -160,7 +161,6 @@ friendsData *friendsSetTextAtom(friendsData *dest, const friendsChar *text,
   friendsAtomData *data;
   friendsChar *buf;
   friendsSize sz;
-  friendsHash hsh;
 
   friendsAssert(dest);
   friendsAssert(text);
@@ -171,7 +171,7 @@ friendsData *friendsSetTextAtom(friendsData *dest, const friendsChar *text,
   }
 
   err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
-                        &friendsAtomFuncs);
+                        &friendsAtomFuncs, friendsHashString(text, NULL));
   if (friendsAnyError(err)) {
     if (e) *e = err;
     free(buf);
@@ -193,7 +193,11 @@ friendsData *friendsSetNextAtom(friendsData *dest, friendsError *e)
   friendsAssert(dest);
 
   err = friends_DataSet(dest, friendsAtom, sizeof(friendsAtomData),
-                        &friendsAtomFuncs);
+                        &friendsAtomFuncs, 0x1);
+  if (friendsAnyError(err)) {
+    if (e) *e = err;
+    return NULL;
+  }
 
   data = friendsGetAtomData(friends_DataGetTypeData(dest));
   data->data.t = NULL;

@@ -235,6 +235,8 @@ enum friendsError
 
   friendsErrorUnderscore,    /*!< 下線のあとの文字が不正 */
 
+  friendsErrorMemoryHasPointer, /*!< そのポインタはすでに登録されている */
+
   /* POSIX System Call Errors */
   friendsError2BIG,          /*!< 引き数リストが長過ぎる */
   friendsErrorACCES,         /*!< 許可がない */

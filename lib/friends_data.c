@@ -169,7 +169,7 @@ friendsHash friendsGetHash(const friendsData *d)
   if (d->object) {
     return d->object->hash;
   } else {
-    return friendsHashC(0);
+    return 0;
   }
 }
 
@@ -634,7 +634,7 @@ friendsData *friendsSetList(friendsData *data, friendsDataList *list,
   friendsAssert(list);
 
   err = friends_DataSet(data, friendsListType, sizeof(friendsDataList),
-                        &friendsDataListFuncs);
+                        &friendsDataListFuncs, 0);
   if (friendsAnyError(err)) {
     if (e) *e = err;
     return NULL;

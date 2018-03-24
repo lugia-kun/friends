@@ -57,13 +57,12 @@ void *friendsAddPointer(friendsPark *park, void *p,
                         friendsError *e);
 
 /**
- * @brief ポインタをパークの管理下から取り除くのです。
+ * @brief ポインタをパークの管理下から解放するのです。
  * @param park パークをよこすのです。
- * @param p 取り除くポインタをよこすのです。
- *
- * この関数をパークの削除中に呼び出した時は、何もしないのです。
+ * @param p 解放するポインタをよこすのです。
+ * @return 成功した時はNULLを返すのです。失敗した時は `p` を返すのです。
  */
-void friendsDeletePointer(friendsPark *park, void *p);
+void *friendsDeletePointer(friendsPark *park, void *p);
 
 /**
  * @brief データをパークに登録するのです。

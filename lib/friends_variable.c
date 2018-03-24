@@ -8,6 +8,7 @@
 #include "friends_core.h"
 #include "friends_error.h"
 #include "friends_string.h"
+#include "friends_data_private.h"
 
 static
 friendsVariableData *friendsGetVariableData(void *p)
@@ -93,7 +94,7 @@ friendsData *friendsSetVariable(friendsData *dest, const friendsChar *text,
   }
 
   err = friends_DataSet(dest, friendsVariable, sizeof(friendsVariableData),
-                        &friendsVariableFuncs);
+                        &friendsVariableFuncs, friendsHashString(text, NULL));
   if (friendsAnyError(err)) {
     if (e) *e = err;
     free(buf);

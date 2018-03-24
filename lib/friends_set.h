@@ -75,14 +75,4 @@ void friendsSetRemove(friendsDataSet *set, friendsData *d);
  */
 void friendsSetRemoveAll(friendsDataSet *set, friendsData *d);
 
-/**
- * @brief データセット内のデータを順に処理するのです。
- * @param set データセットをよこすのです。
- * @param f 処理する関数をよこすのです。
- * @param a 関数に渡したい追加データがあるなら、よこすのです。
- */
-void friendsSetEach(friendsDataSet *set,
-                    friendsBool (*f)(friendsDataList *list, void *a),
-                    void *a);
-
 #endif /* FRIENDS_SET_H */
