@@ -84,7 +84,7 @@ friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
   friendsDataSet *set;
   friendsType t;
   const friendsChar *ch;
-  friendsDataList *ll;
+  friendsDataSetNode *node;
   const friendsAtomData *at;
   int n;
 
@@ -110,12 +110,13 @@ friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
       if (friendsAnyError(*e)) {
         return friendsFalse;
       }
-      ll = friendsSetFindNumericAtom(set, n);
+      node = friendsSetFindNumericAtom(set, n, e);
     } else {
-      ll = friendsSetFindText(set, t, ch);
+      node = friendsSetFindByText(set, friendsAtom, ch, e);
     }
     /* このアトムはすでに登録されている。 */
-    if (ll && friendsListSize(ll) > 0) return friendsTrue;
+    if (node) return friendsTrue;
+    if (friendsAnyError(*e)) return friendsFalse;
     break;
   case friendsProposition:
     set = park->friends;

@@ -15,9 +15,9 @@ friendsToken *friendsTokenNext(friendsToken *t);
 
 friendsToken *friendsTokenPrev(friendsToken *t);
 
-void friendsTokenDelete(friendsToken *t);
+void friendsDeleteToken(friendsToken *t);
 
-void friendsTokenDeleteAll(friendsToken *t);
+void friendsDeleteTokenAll(friendsToken *t);
 
 
 friendsToken *

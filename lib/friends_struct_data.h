@@ -23,7 +23,7 @@ struct friendsDataFunctions
  * @typedef friendsMaxAlignType
  * @brief アライメントの最も大きい型
  *
- * もしコンパイラが C11 が対応していれば `max_align_t` を使うのです。C11
+ * もしコンパイラが C11 に対応していれば `max_align_t` を使うのです。C11
  * に対応していない場合は、基本的な型を `union` で固めた型を使っているの
  * です (ただし、不十分かもしれません)。
  */

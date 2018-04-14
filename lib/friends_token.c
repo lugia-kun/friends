@@ -48,25 +48,16 @@ friendsToken *friendsTokenPrev(friendsToken *t)
   return friendsTokenContainer(friendsListPrev(&t->list));
 }
 
-static void friendsTokenDeleteElement(friendsToken *t)
+void friendsDeleteToken(friendsToken *t)
 {
-  friendsAssert(t);
+  if (!t) return;
 
   friendsListDelete(&t->list);
   free(t->token);
   friendsFree(t);
 }
 
-void friendsTokenDelete(friendsToken *t)
-{
-  if (!t) return;
-
-  friendsAssert(t->token);
-
-  friendsTokenDeleteElement(t);
-}
-
-void friendsTokenDeleteAll(friendsToken *t)
+void friendsDeleteTokenAll(friendsToken *t)
 {
   friendsList *p;
   friendsList *n;
@@ -78,9 +69,9 @@ void friendsTokenDeleteAll(friendsToken *t)
   h = &t->list;
   friendsListForeachSafe(p, n, h) {
     pp = friendsTokenContainer(p);
-    friendsTokenDeleteElement(pp);
+    friendsDeleteToken(pp);
   }
-  friendsTokenDeleteElement(t);
+  friendsDeleteToken(t);
 }
 
 friendsToken *

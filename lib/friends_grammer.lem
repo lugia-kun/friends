@@ -44,13 +44,13 @@ statement ::= friend_ask SEPR.
 friend_define ::= SUGOI friend_part(A) NANDANE. {
   friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
                                  A.verb, friendsPropositionNormal, &p->err);
-  friendsParserDeleteTokenLater(A.verb);
+  friendsDeleteToken(A.verb);
 }
 
 friend_define ::= SUGOI friend_part(A) NANDANE TANOSHI. {
   friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
                                  A.verb, friendsPropositionStop, &p->err);
-  friendsParserDeleteTokenLater(A.verb);
+  friendsDeleteToken(A.verb);
 }
 
 friend_define ::= SUGOI conditionals(A) THEN friend_part(B) NANDANE. {
@@ -61,19 +61,19 @@ friend_define ::= SUGOI conditionals(A) THEN friend_part(B) NANDANE. {
 friend_define ::= SUGOI conditionals(A) THEN friend_part(B) NANDANE TANOSHI. {
   friendsParserInsertProposition(p->parsed_data, p->park, A, B.list,
                                  B.verb, friendsPropositionNormal, &p->err);
-  friendsParserDeleteTokenLater(B.verb);
+  friendsDeleteToken(B.verb);
 }
 
 friend_ask ::= friend_part(A) NANDAKKE. {
   friendsParserInsertProposition(p->parsed_data, p->park, NULL, A.list,
                                  A.verb, friendsPropositionQuery, &p->err);
-  friendsParserDeleteTokenLater(A.verb);
+  friendsDeleteToken(A.verb);
 }
 
 friend_ask ::= conditionals(A) THEN friend_part(B) NANDAKKE. {
   friendsParserInsertProposition(p->parsed_data, p->park, A, B.list,
                                  B.verb, friendsPropositionQuery, &p->err);
-  friendsParserDeleteTokenLater(B.verb);
+  friendsDeleteToken(B.verb);
 }
 
 conditionals(A) ::= friend_part(B). {
@@ -98,7 +98,7 @@ conditionals(A) ::= friend_part(B). {
     A = NULL;
     friendsDataListDeleteAll(lp);
   }
-  friendsParserDeleteTokenLater(B.verb);
+  friendsDeleteToken(B.verb);
 }
 
 conditionals(A) ::= conditionals(B) AND friend_part(C). {
@@ -119,7 +119,7 @@ conditionals(A) ::= conditionals(B) AND friend_part(C). {
     A = NULL;
     friendsDataListDeleteAll(B);
   }
-  friendsParserDeleteTokenLater(C.verb);
+  friendsDeleteToken(C.verb);
 }
 
 friend_part(A) ::= complete_list(B) FRIEND_NAME(C) FRIEND. {
@@ -180,7 +180,7 @@ term(A) ::= ATOM(B). {
     atom = friendsParserCreateAtom(p->park, friendsNumericAtom, B, &p->err);
   }
   A = atom;
-  friendsParserDeleteTokenLater(B); 
+  friendsDeleteToken(B); 
 }
 
 term(A) ::= TSUGI(B). {
@@ -190,7 +190,7 @@ term(A) ::= TSUGI(B). {
     atom = friendsParserCreateAtom(p->park, friendsTextAtom, B, &p->err);
   }
   A = atom;
-  friendsParserDeleteTokenLater(B);
+  friendsDeleteToken(B);
 }
 
 term(A) ::= VARIABLE(B). {
@@ -200,7 +200,7 @@ term(A) ::= VARIABLE(B). {
     var = friendsParserCreateVariable(p->park, B, friendsFalse, &p->err);
   }
   A = var;
-  friendsParserDeleteTokenLater(B);
+  friendsDeleteToken(B);
 }
 
 term(A) ::= LKAGI list(B) RKAGI. {
@@ -240,7 +240,7 @@ term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA RKAGI. {
   if (!d) {
     friendsDataListDeleteAll(B);
   }
-  friendsParserDeleteTokenLater(C);
+  friendsDeleteToken(C);
 }
 
 term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA PARTICLE RKAGI. {
@@ -256,7 +256,7 @@ term(A) ::= LKAGI list(B) PARTICLE VARIABLE(C) TOKA PARTICLE RKAGI. {
   if (!d) {
     friendsDataListDeleteAll(B);
   }
-  friendsParserDeleteTokenLater(C);
+  friendsDeleteToken(C);
 }
 
 term(A) ::= term(B) NO ATOM(C). {
@@ -268,7 +268,7 @@ term(A) ::= term(B) NO ATOM(C). {
       d = friendsParserAddDataToTerm(B, atom, p->park, &p->err);
     }
   }
-  friendsParserDeleteTokenLater(C);
+  friendsDeleteToken(C);
   A = d;
 }
 
@@ -294,4 +294,4 @@ term(A) ::= term(B) NO TSUGI. {
 %destructor conditionals  { friendsDataListDeleteAll($$); }
 %destructor complete_list { friendsDataListDeleteAll($$); }
 %destructor list          { friendsDataListDeleteAll($$); }
-%token_destructor         { friendsParserDeleteTokenLater($$); }
+%token_destructor         { friendsDeleteToken($$); }
