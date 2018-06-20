@@ -138,10 +138,15 @@ friendsBool friendsAddDataToPark(friendsPark *park, friendsData *d,
 friendsDataList *friendsPropositionListInPark(friendsPark *park,
                                               const friendsChar *verb)
 {
+  friendsDataSetNode *n
+  friendsError e;
   friendsAssert(park);
   friendsAssert(verb);
 
-  return friendsSetFindText(park->friends, friendsProposition, verb);
+  n = friendsSetFindByText(park->friends, friendsProposition, verb, &e);
+  if (friendsAnyError(e)) return NULL;
+
+  return friendsSetFindByText(park->friends, friendsProposition, verb);
 }
 
 
